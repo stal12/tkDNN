@@ -89,16 +89,16 @@ target_link_libraries(test_yolo3_berkeley tkDNN)
 add_executable(test_yolo3_flir tests/yolo3_flir/yolo3_flir.cpp)
 target_link_libraries(test_yolo3_flir tkDNN)
 
-add_executable(test_imuodom tests/imuodom/imuodom.cpp)
-target_link_libraries(test_imuodom tkDNN)
+#add_executable(test_imuodom tests/imuodom/imuodom.cpp)
+#target_link_libraries(test_imuodom tkDNN)
 ################################################################################
 
 
 add_executable(test_rtinference tests/test_rtinference/rtinference.cpp)
 target_link_libraries(test_rtinference tkDNN)
 
-add_executable(yolo3_demo demo/demo/demo.cpp)
-target_link_libraries(yolo3_demo tkDNN)
+#add_executable(yolo3_demo demo/demo/demo.cpp)
+#target_link_libraries(yolo3_demo tkDNN)
 
 
 #-------------------------------------------------------------------------------
