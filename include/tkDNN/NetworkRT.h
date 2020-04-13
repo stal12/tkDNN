@@ -24,13 +24,18 @@ template<typename T> T readBUF(const char*& buffer)
 
 using namespace nvinfer1;
 #include "pluginsRT/ActivationLeakyRT.h"
+#include "pluginsRT/ActivationReLUCeilingRT.h"
 #include "pluginsRT/ReorgRT.h"
 #include "pluginsRT/RegionRT.h"
 //#include "pluginsRT/RouteRT.h"
 #include "pluginsRT/ShortcutRT.h"
 #include "pluginsRT/YoloRT.h"
 #include "pluginsRT/UpsampleRT.h"
-//#include "pluginsRT/Int8Calibrator.h"
+#include "pluginsRT/ResizeLayerRT.h"
+#include "pluginsRT/DeformableConvRT.h"
+#include "pluginsRT/FlattenConcatRT.h"
+#include "pluginsRT/ReshapeRT.h"
+#include "pluginsRT/MaxPoolingFixedSizeRT.h"
 
 class PluginFactory : IPluginFactory
 {
@@ -50,7 +55,9 @@ public:
     nvinfer1::IBuilder *builderRT;
     nvinfer1::IRuntime *runtimeRT;
     nvinfer1::INetworkDefinition *networkRT; 
-    
+#if NV_TENSORRT_MAJOR >= 6  
+    nvinfer1::IBuilderConfig *configRT;
+#endif
     nvinfer1::ICudaEngine *engineRT;
     nvinfer1::IExecutionContext *contextRT;
 
@@ -80,11 +87,14 @@ public:
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Pooling *l);
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Softmax *l);
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Route *l);
+    nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Flatten *l);
+    nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Reshape *l);
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Reorg *l);
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Region *l);
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Shortcut *l);
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Yolo *l);
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Upsample *l);
+    nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, DeformConv2d *l);
 
     bool serialize(const char *filename);
     bool deserialize(const char *filename);
