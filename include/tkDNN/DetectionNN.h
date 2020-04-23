@@ -32,8 +32,6 @@ class DetectionNN {
 
         cv::Size originalSize;
 
-        cv::Scalar colors[256];
-
 #ifdef OPENCV_CUDACONTRIB
         cv::cuda::GpuMat bgr[3];
         cv::cuda::GpuMat imagePreproc;
@@ -64,6 +62,8 @@ class DetectionNN {
         std::vector<tk::dnn::box> detected; /*bounding boxes in output*/
         std::vector<double> stats; /*keeps track of inference times (ms)*/
         std::vector<std::string> classesNames;
+
+        cv::Scalar colors[256];
 
         DetectionNN() {};
         ~DetectionNN(){};
