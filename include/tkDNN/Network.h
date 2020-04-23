@@ -1,6 +1,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include <string>
 #include "utils.h"
 
 namespace tk { namespace dnn {
@@ -32,7 +33,7 @@ struct dataDim_t {
 };
 
 class Layer;
-const int MAX_LAYERS = 256;
+const int MAX_LAYERS = 512;
 
 class Network {
 
@@ -47,6 +48,7 @@ public:
 
     bool addLayer(Layer *l);
     void print();
+    const char *getNetworkRTName(const char *network_name);
 
     cudnnDataType_t dataType;
     cudnnTensorFormat_t tensorFormat;
@@ -59,7 +61,13 @@ public:
     dataDim_t input_dim;
     dataDim_t getOutputDim();
 
-    bool fp16, dla;
+    bool fp16, dla, int8;
+    bool dontLoadWeights;
+    std::string fileImgList;
+    std::string fileLabelList;
+    std::string networkName;
+    std::string networkNameRT;
+    
 };
 
 }}

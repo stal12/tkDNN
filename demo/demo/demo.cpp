@@ -3,16 +3,12 @@
 #include <stdlib.h>     /* srand, rand */
 #include <unistd.h>
 #include <mutex>
-#include "utils.h"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/videoio.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-
+#include "CenternetDetection.h"
+#include "MobilenetDetection.h"
 #include "Yolo3Detection.h"
 
-bool 			gRun;
+bool gRun;
 bool SAVE_RESULT = false;
 
 void sig_handler(int signo) {
@@ -26,15 +22,42 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, sig_handler);
 
 
-    char *net = "yolo3_berkeley.rt";
+    std::string net = "yolo3_berkeley.rt";
     if(argc > 1)
         net = argv[1]; 
-    char *input = "../demo/yolo_test.mp4";
+    std::string input = "../demo/yolo_test.mp4";
     if(argc > 2)
         input = argv[2]; 
+    char ntype = 'y';
+    if(argc > 3)
+        ntype = argv[3][0]; 
+    int n_classes = 80;
+    if(argc > 4)
+        n_classes = atoi(argv[4]); 
 
     tk::dnn::Yolo3Detection yolo;
-    yolo.init(net);
+    tk::dnn::CenternetDetection cnet;
+    tk::dnn::MobilenetDetection mbnet;  
+
+    tk::dnn::DetectionNN *detNN;  
+
+    switch(ntype)
+    {
+        case 'y':
+            detNN = &yolo;
+            break;
+        case 'c':
+            detNN = &cnet;
+            break;
+        case 'm':
+            detNN = &mbnet;
+            n_classes++;
+            break;
+        default:
+        FatalError("Network type not allowed (3rd parameter)\n");
+    }
+
+    detNN->init(net, n_classes);
 
     gRun = true;
 
@@ -43,7 +66,6 @@ int main(int argc, char *argv[]) {
         gRun = false; 
     else
         std::cout<<"camera started\n";
-
 
     cv::VideoWriter resultVideo;
     if(SAVE_RESULT) {
@@ -56,6 +78,8 @@ int main(int argc, char *argv[]) {
     cv::Mat dnn_input;
     cv::namedWindow("detection", cv::WINDOW_NORMAL);
     
+    std::vector<tk::dnn::box> detected_bbox;
+
     while(gRun) {
         cap >> frame; 
         if(!frame.data) {
@@ -64,32 +88,11 @@ int main(int argc, char *argv[]) {
  
         // this will be resized to the net format
         dnn_input = frame.clone();
-        // TODO: async infer
-        yolo.update(dnn_input);
+        
+        //inference
+        detNN->update(dnn_input);
+        frame = detNN->draw(frame);
 
-        // draw dets
-        for(int i=0; i<yolo.detected.size(); i++) {
-            tk::dnn::box b = yolo.detected[i];
-            int x0   				= b.x;
-            int x1   				= b.x + b.w;
-            int y0   				= b.y;
-            int y1   				= b.y + b.h;
-            std::string det_class 	= yolo.getYoloLayer()->classesNames[b.cl];
-            float prob 				= b.prob;
-
-            std::cout<<det_class<<" ("<<prob<<"): "<<x0<<" "<<y0<<" "<<x1<<" "<<y1<<"\n";
-			// draw rectangle
-            cv::rectangle(frame, cv::Point(x0, y0), cv::Point(x1, y1), yolo.colors[b.cl], 2); 
-
-	        // draw label
-            int baseline = 0;
-            float fontScale = 0.5;
-            int thickness = 2;
-            cv::Size textSize = getTextSize(det_class, cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
-            cv::rectangle(frame, cv::Point(x0, y0), cv::Point((x0 + textSize.width - 2), (y0 - textSize.height - 2)), yolo.colors[b.cl], -1);                      
-            cv::putText(frame, det_class, cv::Point(x0, (y0 - (baseline / 2))), cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255), thickness);
-        }
-    
         cv::imshow("detection", frame);
         cv::waitKey(1);
         if(SAVE_RESULT)
@@ -97,13 +100,15 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout<<"detection end\n";   
-
-
+    double mean = 0; 
+    
     std::cout<<COL_GREENB<<"\n\nTime stats:\n";
-    std::cout<<"Min: "<<*std::min_element(yolo.stats.begin(), yolo.stats.end())<<" ms\n";    
-    std::cout<<"Max: "<<*std::max_element(yolo.stats.begin(), yolo.stats.end())<<" ms\n";    
-    double mean = 0; for(int i=0; i<yolo.stats.size(); i++) mean += yolo.stats[i]; mean /= yolo.stats.size();
-    std::cout<<"Avg: "<<mean<<" ms\n"<<COL_END;    
+    std::cout<<"Min: "<<*std::min_element(detNN->stats.begin(), detNN->stats.end())<<" ms\n";    
+    std::cout<<"Max: "<<*std::max_element(detNN->stats.begin(), detNN->stats.end())<<" ms\n";    
+    for(int i=0; i<detNN->stats.size(); i++) mean += detNN->stats[i]; mean /= detNN->stats.size();
+    std::cout<<"Avg: "<<mean<<" ms\n"<<COL_END;   
+    
+
     return 0;
 }
 

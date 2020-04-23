@@ -21,10 +21,12 @@ const char *d1_bin = "../tests/imuodom/layers/dense_4.bin";
 
 int main() {
 
+    downloadWeightsifDoNotExist(i0_bin, "../tests/imuodom", "https://cloud.hipert.unimore.it/s/ZAy34K5w2ixED6x/download");
+    
     tk::dnn::ImuOdom ImuNet;
     ImuNet.init("../tests/imuodom/layers/");
 
-    const int N = 19513;
+    const int N = 10000; //19513;
 
     // Network layout
     tk::dnn::dataDim_t dim0(1, 4, 1, 100);
@@ -49,6 +51,7 @@ int main() {
     
     std::ofstream path("path.txt");
 
+    int ret_cudnn = 0; 
     for(int i=0; i<N; i++) {
         std::cout<<"i: "<<i<<"\n";
         //TIMER_START
@@ -61,11 +64,11 @@ int main() {
         path.flush();
 
         // Print real test
-        //printCenteredTitle( (std::string(" CHECK RESULT ") + std::to_string(i) + " ").c_str() , '=');
-        //ImuNet.odim0.print();
-        //checkResult(ImuNet.odim0.tot(), out0, ImuNet.o0_d);
-        //ImuNet.odim1.print();
-        //checkResult(ImuNet.odim0.tot(), out1, ImuNet.o1_d);
+        printCenteredTitle( (std::string(" CHECK RESULT ") + std::to_string(i) + " ").c_str() , '=');
+        ImuNet.odim0.print();
+        ret_cudnn |= checkResult(ImuNet.odim0.tot(), out0, ImuNet.o0_d) == 0 ? 0 : ERROR_CUDNN;
+        ImuNet.odim1.print();
+        ret_cudnn |= checkResult(ImuNet.odim0.tot(), out1, ImuNet.o1_d) == 0 ? 0 : ERROR_CUDNN;
 
         i0_h += ImuNet.dim0.tot();
         i1_h += ImuNet.dim1.tot();
@@ -73,5 +76,7 @@ int main() {
         out0 += ImuNet.odim0.tot();
         out1 += ImuNet.odim1.tot();
     }
-    return 0;
+
+    int err = system("cat path.txt | gnuplot -p -e \"set datafile separator ' '; plot '-'\"");
+    return ret_cudnn;
 }

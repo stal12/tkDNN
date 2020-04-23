@@ -12,9 +12,14 @@ enum layerType_t {
     LAYER_INPUT,
     LAYER_DENSE,
     LAYER_CONV2D,
+    LAYER_DECONV2D,
+    LAYER_DEFORMCONV2D,
     LAYER_LSTM,
     LAYER_ACTIVATION,
+    LAYER_ACTIVATION_CRELU,
+    LAYER_ACTIVATION_LEAKY,
     LAYER_FLATTEN,
+    LAYER_RESHAPE,
     LAYER_MULADD,
     LAYER_POOLING,
     LAYER_SOFTMAX,
@@ -42,29 +47,37 @@ public:
         std::cout<<"No infer action for this layer\n";
         return NULL;
     }
-
+    void setFinal() { this->final = true; }
     dataDim_t input_dim, output_dim;
     dnnType *dstData;  //where results will be putted
+
+    int id = 0;
+    bool final;        //if the layer is the final one
 
     std::string getLayerName() {
         layerType_t type = getLayerType();
         switch(type) {
-            case LAYER_INPUT:       return "Input";
-            case LAYER_DENSE:       return "Dense";
-            case LAYER_CONV2D:      return "Conv2d";
-            case LAYER_LSTM:        return "LSTM";
-            case LAYER_ACTIVATION:  return "Activation";
-            case LAYER_FLATTEN:     return "Flatten";
-            case LAYER_MULADD:      return "MulAdd";
-            case LAYER_POOLING:     return "Pooling";
-            case LAYER_SOFTMAX:     return "Softmax";
-            case LAYER_ROUTE:       return "Route";            
-            case LAYER_REORG:       return "Reorg";
-            case LAYER_SHORTCUT:    return "Shortcut";
-            case LAYER_UPSAMPLE:    return "Upsample";
-            case LAYER_REGION:      return "Region";
-            case LAYER_YOLO:        return "Yolo";
-            default:                return "unknown";
+            case LAYER_INPUT:               return "Input";
+            case LAYER_DENSE:               return "Dense";
+            case LAYER_CONV2D:              return "Conv2d";
+            case LAYER_DECONV2D:            return "DeConv2d";
+            case LAYER_DEFORMCONV2D:        return "DeformConv2d";
+            case LAYER_LSTM:                return "LSTM";
+            case LAYER_ACTIVATION:          return "Activation";
+            case LAYER_ACTIVATION_CRELU:    return "ActivationCReLU";
+            case LAYER_ACTIVATION_LEAKY:    return "ActivationLeaky";
+            case LAYER_FLATTEN:             return "Flatten";
+            case LAYER_RESHAPE:             return "Reshape";
+            case LAYER_MULADD:              return "MulAdd";
+            case LAYER_POOLING:             return "Pooling";
+            case LAYER_SOFTMAX:             return "Softmax";
+            case LAYER_ROUTE:               return "Route";            
+            case LAYER_REORG:               return "Reorg";
+            case LAYER_SHORTCUT:            return "Shortcut";
+            case LAYER_UPSAMPLE:            return "Upsample";
+            case LAYER_REGION:              return "Region";
+            case LAYER_YOLO:                return "Yolo";
+            default:                        return "unknown";
         }
     }
 
@@ -81,8 +94,8 @@ protected:
 class LayerWgs : public Layer {
 
 public:
-    LayerWgs(Network *net, int inputs, int outputs, int kh, int kw, int kt, 
-             std::string fname_weights, bool batchnorm = false); 
+    LayerWgs(Network *net, int inputs, int outputs, int kh, int kw, int kt,
+             std::string fname_weights, bool batchnorm = false, bool additional_bias = false, bool deConv = false, int groups = 1); 
     virtual ~LayerWgs();
 
     int inputs, outputs;
@@ -90,6 +103,10 @@ public:
 
     dnnType *data_h, *data_d;
     dnnType *bias_h, *bias_d;
+
+    // additional bias for DCN
+    bool additional_bias;
+    dnnType *bias2_h, *bias2_d;
 
     //batchnorm
     bool batchnorm;
@@ -101,6 +118,7 @@ public:
     //fp16
     __half *data16_h, *bias16_h;
     __half *data16_d, *bias16_d;
+    __half *bias216_h, *bias216_d;
 
     __half *power16_h,    *power16_d;
     __half *scales16_h,   *scales16_d;
@@ -160,10 +178,18 @@ class Activation : public Layer {
 
 public:
     int act_mode;
+    float ceiling;
 
-    Activation(Network *net, int act_mode); 
+    Activation(Network *net, int act_mode, const float ceiling=0.0); 
     virtual ~Activation();
-    virtual layerType_t getLayerType() { return LAYER_ACTIVATION; };
+    virtual layerType_t getLayerType() { 
+        if(act_mode == CUDNN_ACTIVATION_CLIPPED_RELU)
+            return LAYER_ACTIVATION_CRELU;
+        else if (act_mode == ACTIVATION_LEAKY)
+            return LAYER_ACTIVATION_LEAKY;
+        else
+            return LAYER_ACTIVATION;
+         };
 
     virtual dnnType* infer(dataDim_t &dim, dnnType* srcData);
 
@@ -188,20 +214,25 @@ class Conv2d : public LayerWgs {
 public:
     Conv2d( Network *net, int out_ch, int kernelH, int kernelW, 
                 int strideH, int strideW, int paddingH, int paddingW,
-                std::string fname_weights, bool batchnorm = false); 
+                std::string fname_weights, bool batchnorm = false, bool deConv = false, int groups = 1, bool additional_bias=false);
     virtual ~Conv2d();
     virtual layerType_t getLayerType() { return LAYER_CONV2D; };
 
     virtual dnnType* infer(dataDim_t &dim, dnnType* srcData);
 
     int kernelH, kernelW, strideH, strideW, paddingH, paddingW;
+    bool deConv, additional_bias;
+    int groups;
 
 protected:
     cudnnFilterDescriptor_t filterDesc;
     cudnnConvolutionDescriptor_t convDesc;
-    cudnnConvolutionFwdAlgo_t algo;
+    cudnnConvolutionFwdAlgo_t     algo;
+    cudnnConvolutionBwdDataAlgo_t bwAlgo;
     cudnnTensorDescriptor_t biasTensorDesc;
 
+    void initCUDNN(bool back = false);
+    void inferCUDNN(dnnType* srcData, bool back = false);
     void*  workSpace;
     size_t ws_sizeInBytes;
 };
@@ -273,6 +304,56 @@ protected:
 
 
 /**
+    Convolutional 2D layer
+*/
+class DeConv2d : public Conv2d {
+
+public:
+    DeConv2d( Network *net, int out_ch, int kernelH, int kernelW,
+            int strideH, int strideW, int paddingH, int paddingW,
+            std::string fname_weights, bool batchnorm = false, int groups = 1) :
+            Conv2d(net, out_ch, kernelH, kernelW, strideH, strideW, paddingH, paddingW, fname_weights, batchnorm, true, groups) {}
+    virtual ~DeConv2d() {}
+    virtual layerType_t getLayerType() { return LAYER_DECONV2D; };
+
+    virtual dnnType* infer(dataDim_t &dim, dnnType* srcData);
+};
+
+
+/**
+    Deformable Convolutionl 2d layer
+*/  
+class DeformConv2d : public LayerWgs {
+
+public:
+    DeformConv2d( Network *net, int out_ch, int deformable_group, int kernelH, int kernelW,
+                int strideH, int strideW, int paddingH, int paddingW,
+                std::string d_fname_weights, std::string fname_weights, bool batchnorm);
+    virtual ~DeformConv2d();
+    virtual layerType_t getLayerType() { return LAYER_DEFORMCONV2D; };
+
+    virtual dnnType* infer(dataDim_t &dim, dnnType* srcData);
+    tk::dnn::Conv2d *preconv; 
+    int out_ch;
+    int deformableGroup;
+    int kernelH, kernelW, strideH, strideW, paddingH, paddingW;
+    dnnType *ones_d1;
+    dnnType *ones_d2;
+    int chunk_dim;
+    dnnType *offset, *mask;
+    dnnType *output_conv;
+
+    cublasStatus_t stat;
+    cublasHandle_t handle;
+
+protected:
+
+    cudnnTensorDescriptor_t biasTensorDesc;
+    void initCUDNN();
+
+};
+
+/**
     Flatten layer
     is actually a matrix transposition
 */
@@ -284,6 +365,20 @@ public:
     virtual layerType_t getLayerType() { return LAYER_FLATTEN; };
 
     virtual dnnType* infer(dataDim_t &dim, dnnType* srcData);
+};
+
+/**
+    Reshape layer
+*/
+class Reshape : public Layer {
+
+public:
+    Reshape(Network *net, dataDim_t new_dim); 
+    virtual ~Reshape();
+    virtual layerType_t getLayerType() { return LAYER_RESHAPE; };
+
+    virtual dnnType* infer(dataDim_t &dim, dnnType* srcData);
+
 };
 
 
@@ -312,8 +407,9 @@ protected:
 */
 typedef enum {
     POOLING_MAX     = 0,
-    POOLING_AVERAGE = 1,                  // count for average includes padded values
-    POOLING_AVERAGE_EXCLUDE_PADDING = 2   // count for average does not include padded values
+    POOLING_AVERAGE = 1,                    // count for average includes padded values
+    POOLING_AVERAGE_EXCLUDE_PADDING = 2,    // count for average does not include padded values
+    POOLING_MAX_FIXEDSIZE = 100             // max pool darknet fashion
 } tkdnnPoolingMode_t;
 
 /**
@@ -326,9 +422,13 @@ public:
     int winH, winW;
     int strideH, strideW;
     int paddingH, paddingW;
+    bool size;
+    tkdnnPoolingMode_t pool_mode;
 
     Pooling(Network *net, int winH, int winW, 
-            int strideH, int strideW, tkdnnPoolingMode_t pool_mode); 
+            int strideH, int strideW, 
+            int paddingH, int paddingW,
+            tkdnnPoolingMode_t pool_mode);
     virtual ~Pooling();
     virtual layerType_t getLayerType() { return LAYER_POOLING; };
 
@@ -337,7 +437,6 @@ public:
 protected:
 
     cudnnPoolingDescriptor_t poolingDesc;
-    tkdnnPoolingMode_t pool_mode;
     dnnType *tmpInputData, *tmpOutputData;
     bool poolOn3d;
 };
@@ -348,11 +447,13 @@ protected:
 class Softmax : public Layer {
 
 public:
-    Softmax(Network *net); 
+    Softmax(Network *net, const tk::dnn::dataDim_t* dim=nullptr, const cudnnSoftmaxMode_t mode=CUDNN_SOFTMAX_MODE_CHANNEL); 
     virtual ~Softmax();
     virtual layerType_t getLayerType() { return LAYER_SOFTMAX; };
 
     virtual dnnType* infer(dataDim_t &dim, dnnType* srcData);
+    dataDim_t dim;
+    cudnnSoftmaxMode_t mode;
 };
 
 /**
@@ -429,6 +530,11 @@ struct box {
     int cl;
     float x, y, w, h;
     float prob;
+
+    void print() 
+    {
+        std::cout<<"x: "<<x<<"\ty: "<<y<<"\tw: "<<w<<"\th: "<<h<<"\tcl: "<<cl<<"\tprob: "<<prob<<std::endl;
+    }
 };
 struct sortable_bbox {
     int index;
@@ -455,11 +561,11 @@ public:
         int sort_class;
     };
 
-    Yolo(Network *net, int classes, int num, std::string fname_weights);
+    Yolo(Network *net, int classes, int num, std::string fname_weights, int n_masks=3);
     virtual ~Yolo();
     virtual layerType_t getLayerType() { return LAYER_YOLO; };
 
-    int classes, num;
+    int classes, num, n_masks;
     dnnType *mask_h, *mask_d; //anchors
     dnnType *bias_h, *bias_d; //anchors
     std::vector<std::string> classesNames;
@@ -469,7 +575,7 @@ public:
 
     dnnType *predictions;
 
-    static const int MAX_DETECTIONS = 256;
+    static const int MAX_DETECTIONS = 2048;
     static Yolo::detection *allocateDetections(int nboxes, int classes);
     static void             mergeDetections(Yolo::detection *dets, int ndets, int classes);
 };

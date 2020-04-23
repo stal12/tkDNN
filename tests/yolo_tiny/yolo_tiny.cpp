@@ -17,29 +17,31 @@ const char *output_bin = "../tests/yolo_tiny/layers/output.bin";
 
 int main() {
 
+    downloadWeightsifDoNotExist(input_bin, "../tests/yolo_tiny", "https://cloud.hipert.unimore.it/s/m3orfJr8pGrN5mQ/download");
+
     // Network layout
     tk::dnn::dataDim_t dim(1, 3, 416, 416, 1);
     tk::dnn::Network net(dim);
 
     tk::dnn::Conv2d     c0 (&net, 16, 3, 3, 1, 1, 1, 1,   c0_bin, true);
     tk::dnn::Activation a0 (&net, tk::dnn::ACTIVATION_LEAKY);
-    tk::dnn::Pooling    p1 (&net, 2, 2, 2, 2, tk::dnn::POOLING_MAX);
+    tk::dnn::Pooling    p1 (&net, 2, 2, 2, 2, 0, 0, tk::dnn::POOLING_MAX);
 
     tk::dnn::Conv2d     c2 (&net, 32, 3, 3, 1, 1, 1, 1,   c2_bin, true);
     tk::dnn::Activation a2 (&net, tk::dnn::ACTIVATION_LEAKY);
-    tk::dnn::Pooling    p3 (&net, 2, 2, 2, 2, tk::dnn::POOLING_MAX);
+    tk::dnn::Pooling    p3 (&net, 2, 2, 2, 2, 0, 0, tk::dnn::POOLING_MAX);
 
     tk::dnn::Conv2d     c4 (&net, 64, 3, 3, 1, 1, 1, 1,  c4_bin, true);
     tk::dnn::Activation a4 (&net, tk::dnn::ACTIVATION_LEAKY);
-    tk::dnn::Pooling    p5 (&net, 2, 2, 2, 2, tk::dnn::POOLING_MAX);
+    tk::dnn::Pooling    p5 (&net, 2, 2, 2, 2, 0, 0, tk::dnn::POOLING_MAX);
 
     tk::dnn::Conv2d     c6 (&net, 128, 3, 3, 1, 1, 1, 1,  c6_bin, true);
     tk::dnn::Activation a6 (&net, tk::dnn::ACTIVATION_LEAKY);
-    tk::dnn::Pooling    p7(&net, 2, 2, 2, 2, tk::dnn::POOLING_MAX);
+    tk::dnn::Pooling    p7(&net, 2, 2, 2, 2, 0, 0, tk::dnn::POOLING_MAX);
 
     tk::dnn::Conv2d     c8(&net, 256, 3, 3, 1, 1, 1, 1,  c8_bin, true);
     tk::dnn::Activation a8(&net, tk::dnn::ACTIVATION_LEAKY);
-    tk::dnn::Pooling    p9(&net, 2, 2, 2, 2, tk::dnn::POOLING_MAX);
+    tk::dnn::Pooling    p9(&net, 2, 2, 2, 2, 0, 0, tk::dnn::POOLING_MAX);
 
     tk::dnn::Conv2d     c10(&net, 512, 3, 3, 1, 1, 1, 1, c10_bin, true);
     tk::dnn::Activation a10(&net, tk::dnn::ACTIVATION_LEAKY);
@@ -60,7 +62,7 @@ int main() {
     net.print();
 
     //convert network to tensorRT
-    tk::dnn::NetworkRT netRT(&net, "yolo_tiny.rt");
+    tk::dnn::NetworkRT netRT(&net, net.getNetworkRTName("yolo_tiny"));
 
     dnnType *out_data, *out_data2; // cudnn output, tensorRT output
 
@@ -86,8 +88,13 @@ int main() {
     dnnType *out, *out_h;
     int out_dim = net.getOutputDim().tot();
     readBinaryFile(output_bin, out_dim, &out_h, &out);
-    std::cout<<"CUDNN vs correct"; checkResult(out_dim, out_data, out);
-    std::cout<<"TRT   vs correct"; checkResult(out_dim, out_data2, out);
-    std::cout<<"CUDNN vs TRT    "; checkResult(out_dim, out_data, out_data2);
-    return 0;
+    
+    std::cout<<"CUDNN vs correct"; 
+    int ret_cudnn = checkResult(out_dim, out_data, out) == 0 ? 0: ERROR_CUDNN;
+    std::cout<<"TRT   vs correct"; 
+    int ret_tensorrt = checkResult(out_dim, out_data2, out) == 0 ? 0 : ERROR_TENSORRT;
+    std::cout<<"CUDNN vs TRT    "; 
+    int ret_cudnn_tensorrt = checkResult(out_dim, out_data, out_data2) == 0 ? 0 : ERROR_CUDNNvsTENSORRT;
+
+    return ret_cudnn | ret_tensorrt | ret_cudnn_tensorrt;
 }

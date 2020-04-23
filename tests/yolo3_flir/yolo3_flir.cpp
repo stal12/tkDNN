@@ -11,10 +11,12 @@ int main() {
 
     // create yolo3 model
     std::string bin_path  = "../tests/yolo3_flir";
+    downloadWeightsifDoNotExist("../tests/yolo3_flir/layers/input.bin", bin_path, "https://cloud.hipert.unimore.it/s/62DECncmF6bMMiH/download");
+
     int classes = 3;
     tk::dnn::Yolo *yolo [3];
     #include "models/Yolo3.h"
-
+    
     // fill classes names
     for(int i=0; i<3; i++) {
         yolo[i]->classesNames = {"person", "bike", "car"};
@@ -29,7 +31,7 @@ int main() {
     net.print();
 
     //convert network to tensorRT
-    tk::dnn::NetworkRT netRT(&net, "yolo3_flir.rt");
+    tk::dnn::NetworkRT netRT(&net, net.getNetworkRTName("yolo3_flir"));
 
     // the network have 3 outputs
     tk::dnn::dataDim_t out_dim[3];
@@ -80,14 +82,19 @@ int main() {
     }
     for(int i=0; i<3; i++) rt_out[i] = (dnnType*)netRT.buffersRT[i+1];
 
+
+    int ret_cudnn = 0, ret_tensorrt = 0, ret_cudnn_tensorrt = 0; 
     for(int i=0; i<3; i++) {
         printCenteredTitle((std::string(" YOLO ") + std::to_string(i) + " CHECK RESULTS ").c_str(), '=', 30);
         dnnType *out, *out_h;
         int odim = out_dim[i].tot();
         readBinaryFile(output_bins[i], odim, &out_h, &out);
-        std::cout<<"CUDNN vs correct"; checkResult(odim, cudnn_out[i], out);
-        std::cout<<"TRT   vs correct"; checkResult(odim, rt_out[i], out);
-        std::cout<<"CUDNN vs TRT    "; checkResult(odim, cudnn_out[i], rt_out[i]);
+        std::cout<<"CUDNN vs correct"; 
+        ret_cudnn |= checkResult(odim, cudnn_out[i], out) == 0 ? 0: ERROR_CUDNN;
+        std::cout<<"TRT   vs correct"; 
+        ret_tensorrt |= checkResult(odim, rt_out[i], out) == 0 ? 0 : ERROR_TENSORRT;
+        std::cout<<"CUDNN vs TRT    "; 
+        ret_cudnn_tensorrt |= checkResult(odim, cudnn_out[i], rt_out[i]) == 0 ? 0 : ERROR_CUDNNvsTENSORRT;
     }
-    return 0;
+    return ret_cudnn | ret_tensorrt | ret_cudnn_tensorrt;
 }

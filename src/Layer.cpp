@@ -7,7 +7,7 @@ namespace tk { namespace dnn {
 Layer::Layer(Network *net) {
 
     this->net = net;
-
+    this->final = false;
     if(net != nullptr) {
         this->input_dim = net->getOutputDim();
         this->output_dim = input_dim;
