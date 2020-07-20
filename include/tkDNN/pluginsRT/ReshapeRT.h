@@ -1,4 +1,3 @@
-#include<cassert>
 
 class ReshapeRT : public IPlugin {
 

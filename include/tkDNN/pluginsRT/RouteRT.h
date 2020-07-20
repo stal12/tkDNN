@@ -1,4 +1,3 @@
-#include<cassert>
 #include "../kernels.h"
 
 class RouteRT : public IPlugin {

@@ -1,4 +1,3 @@
-#include<cassert>
 #include "../kernels.h"
 
 class RegionRT : public IPlugin {

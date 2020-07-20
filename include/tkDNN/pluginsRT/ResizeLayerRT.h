@@ -1,4 +1,3 @@
-#include<cassert>
 #include "../kernels.h"
 
 class ResizeLayerRT : public IPlugin {

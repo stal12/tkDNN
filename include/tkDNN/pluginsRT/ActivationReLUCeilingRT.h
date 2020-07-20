@@ -1,4 +1,3 @@
-#include<cassert>
 #include "../kernels.h"
 
 class ActivationReLUCeiling : public IPlugin {

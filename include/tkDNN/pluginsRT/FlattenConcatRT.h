@@ -1,4 +1,3 @@
-#include<cassert>
 
 class FlattenConcatRT : public IPlugin {
 
@@ -24,7 +23,9 @@ public:
 	}
 
 	void configure(const Dims* inputDims, int nbInputs, const Dims* outputDims, int nbOutputs, int maxBatchSize) override {
-		assert(nbOutputs == 1 && nbInputs ==1);
+		if(nbOutputs == 1 && nbInputs ==1) {
+			FatalError("input outputs size wrong");
+		}
 		rows = inputDims[0].d[0];
 		cols = inputDims[0].d[1] * inputDims[0].d[2];
 		c = inputDims[0].d[0] * inputDims[0].d[1] * inputDims[0].d[2];
