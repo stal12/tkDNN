@@ -1,32 +1,24 @@
 #include<iostream>
 #include "tkDNN/ImuOdom.h"
 
-const char *i0_bin   = "../tests/imuodom/layers/input0.bin";
-const char *i1_bin   = "../tests/imuodom/layers/input1.bin";
-const char *i2_bin   = "../tests/imuodom/layers/input2.bin";
-const char *o0_bin   = "../tests/imuodom/layers/output0.bin";
-const char *o1_bin   = "../tests/imuodom/layers/output1.bin";
-
-const char *c0_bin = "../tests/imuodom/layers/conv1d_7.bin";
-const char *c1_bin = "../tests/imuodom/layers/conv1d_8.bin";
-const char *c2_bin = "../tests/imuodom/layers/conv1d_9.bin";
-const char *c3_bin = "../tests/imuodom/layers/conv1d_10.bin";
-const char *c4_bin = "../tests/imuodom/layers/conv1d_11.bin";
-const char *c5_bin = "../tests/imuodom/layers/conv1d_12.bin";
-const char *l0_bin = "../tests/imuodom/layers/bidirectional_3.bin";
-const char *l1_bin = "../tests/imuodom/layers/bidirectional_4.bin";
-const char *d0_bin = "../tests/imuodom/layers/dense_3.bin";
-const char *d1_bin = "../tests/imuodom/layers/dense_4.bin";
-
+const char *i0_bin   = "imuodom/layers/input0.bin";
+const char *i1_bin   = "imuodom/layers/input1.bin";
+const char *i2_bin   = "imuodom/layers/input2.bin";
+const char *o0_bin   = "imuodom/layers/output0.bin";
+const char *o1_bin   = "imuodom/layers/output1.bin";
 
 int main() {
 
-    downloadWeightsifDoNotExist(i0_bin, "../tests/imuodom", "https://cloud.hipert.unimore.it/s/ZAy34K5w2ixED6x/download");
+    // V1 
+    downloadWeightsifDoNotExist(i0_bin, "imuodom", "https://cloud.hipert.unimore.it/s/ZAy34K5w2ixED6x/download");
+    
+    // V2
+    //downloadWeightsifDoNotExist(i0_bin, "imuodom", "https://cloud.hipert.unimore.it/s/BBSEbEbQbPKxp4s/download");
     
     tk::dnn::ImuOdom ImuNet;
-    ImuNet.init("../tests/imuodom/layers/");
+    ImuNet.init("imuodom/layers/");
 
-    const int N = 10000; //19513;
+    const int N = 19513;
 
     // Network layout
     tk::dnn::dataDim_t dim0(1, 4, 1, 100);
@@ -60,7 +52,9 @@ int main() {
         //TIMER_STOP
 
         // log path
-        path<<ImuNet.odomPOS(0)<<" "<<ImuNet.odomPOS(1)<<" "<< ImuNet.odomPOS(2)<<"\n";
+        path<<ImuNet.odomPOS(0)<<" "<<ImuNet.odomPOS(1)<<" "<< ImuNet.odomPOS(2)<<" ";
+        path<<ImuNet.odomEULER(0)<<" "<<ImuNet.odomEULER(1)<<" "<< ImuNet.odomEULER(2)<<"\n";
+
         path.flush();
 
         // Print real test
@@ -77,6 +71,8 @@ int main() {
         out1 += ImuNet.odim1.tot();
     }
 
-    system("cat path.txt | gnuplot -p -e \"set datafile separator ' '; plot '-'\"");
+    int err = 0;
+    err = system("cat path.txt  | cut -d\" \" -f1,2 | gnuplot -p -e \"set datafile separator ' '; plot '-'\"");
+    err = system("cat path.txt  | cut -d\" \" -f6   | gnuplot -p -e \"set datafile separator ' '; plot '-'\"");
     return ret_cudnn;
 }

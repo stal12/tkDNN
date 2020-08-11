@@ -25,6 +25,7 @@ template<typename T> T readBUF(const char*& buffer)
 using namespace nvinfer1;
 #include "pluginsRT/ActivationLeakyRT.h"
 #include "pluginsRT/ActivationReLUCeilingRT.h"
+#include "pluginsRT/ActivationMishRT.h"
 #include "pluginsRT/ReorgRT.h"
 #include "pluginsRT/RegionRT.h"
 //#include "pluginsRT/RouteRT.h"
@@ -63,6 +64,7 @@ public:
 
     const static int MAX_BUFFERS_RT = 10;
     void* buffersRT[MAX_BUFFERS_RT];
+    dataDim_t buffersDIM[MAX_BUFFERS_RT];
     int buf_input_idx, buf_output_idx;
 
     dataDim_t input_dim, output_dim;
@@ -74,11 +76,25 @@ public:
     NetworkRT(Network *net, const char *name);
     virtual ~NetworkRT();
 
+    int getMaxBatchSize() {
+        if(engineRT != nullptr)
+            return engineRT->getMaxBatchSize();
+        else
+            return 0;
+    }
+
+    int getBuffersN() {
+        if(engineRT != nullptr)
+            return engineRT->getNbBindings();
+        else 
+            return 0;
+    }
+
     /**
         Do inferece
     */
     dnnType* infer(dataDim_t &dim, dnnType* data);
-    void enqueue();    
+    void enqueue(int batchSize = 1);    
 
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Layer *l);
     nvinfer1::ILayer* convert_layer(nvinfer1::ITensor *input, Conv2d *l);

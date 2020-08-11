@@ -2,141 +2,141 @@
 #include "tkdnn.h"
 
 
-const char *output_bin1 = "mobilenetv2ssd/debug/classification_headers-5.bin";
-const char *output_bin2 = "mobilenetv2ssd/debug/regression_headers-5.bin";
-const char *input_bin = "mobilenetv2ssd/debug/input.bin";
+const char *output_bin1 = "bdd-mobilenetv2ssd/debug/classification_headers-5.bin";
+const char *output_bin2 = "bdd-mobilenetv2ssd/debug/regression_headers-5.bin";
+const char *input_bin = "bdd-mobilenetv2ssd/debug/input.bin";
 
-const char *conv0_bin = "mobilenetv2ssd/layers/base_net-0-0.bin";
+const char *conv0_bin = "bdd-mobilenetv2ssd/layers/base_net-0-0.bin";
 const char *inverted_residual1[] = {
-    "mobilenetv2ssd/layers/base_net-1-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-1-conv-3.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-1-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-1-conv-3.bin"};
 const char *inverted_residual2[] = {
-    "mobilenetv2ssd/layers/base_net-2-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-2-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-2-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-2-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-2-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-2-conv-6.bin"};
 const char *inverted_residual3[] = {
-    "mobilenetv2ssd/layers/base_net-3-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-3-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-3-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-3-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-3-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-3-conv-6.bin"};
 const char *inverted_residual4[] = {
-    "mobilenetv2ssd/layers/base_net-4-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-4-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-4-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-4-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-4-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-4-conv-6.bin"};
 const char *inverted_residual5[] = {
-    "mobilenetv2ssd/layers/base_net-5-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-5-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-5-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-5-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-5-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-5-conv-6.bin"};
 const char *inverted_residual6[] = {
-    "mobilenetv2ssd/layers/base_net-6-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-6-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-6-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-6-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-6-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-6-conv-6.bin"};
 const char *inverted_residual7[] = {
-    "mobilenetv2ssd/layers/base_net-7-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-7-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-7-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-7-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-7-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-7-conv-6.bin"};
 const char *inverted_residual8[] = {
-    "mobilenetv2ssd/layers/base_net-8-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-8-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-8-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-8-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-8-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-8-conv-6.bin"};
 const char *inverted_residual9[] = {
-    "mobilenetv2ssd/layers/base_net-9-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-9-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-9-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-9-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-9-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-9-conv-6.bin"};
 const char *inverted_residual10[] = {
-    "mobilenetv2ssd/layers/base_net-10-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-10-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-10-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-10-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-10-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-10-conv-6.bin"};
 const char *inverted_residual11[] = {
-    "mobilenetv2ssd/layers/base_net-11-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-11-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-11-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-11-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-11-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-11-conv-6.bin"};
 const char *inverted_residual12[] = {
-    "mobilenetv2ssd/layers/base_net-12-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-12-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-12-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-12-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-12-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-12-conv-6.bin"};
 const char *inverted_residual13[] = {
-    "mobilenetv2ssd/layers/base_net-13-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-13-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-13-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-13-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-13-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-13-conv-6.bin"};
 const char *inverted_residual14[] = {
-    "mobilenetv2ssd/layers/base_net-14-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-14-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-14-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-14-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-14-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-14-conv-6.bin"};
 const char *inverted_residual15[] = {
-    "mobilenetv2ssd/layers/base_net-15-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-15-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-15-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-15-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-15-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-15-conv-6.bin"};
 const char *inverted_residual16[] = {
-    "mobilenetv2ssd/layers/base_net-16-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-16-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-16-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-16-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-16-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-16-conv-6.bin"};
 const char *inverted_residual17[] = {
-    "mobilenetv2ssd/layers/base_net-17-conv-0.bin",
-    "mobilenetv2ssd/layers/base_net-17-conv-3.bin",
-    "mobilenetv2ssd/layers/base_net-17-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/base_net-17-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-17-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/base_net-17-conv-6.bin"};
 
-const char *conv18 = "mobilenetv2ssd/layers/base_net-18-0.bin";
+const char *conv18 = "bdd-mobilenetv2ssd/layers/base_net-18-0.bin";
 
 const char *extras0[] = {
-    "mobilenetv2ssd/layers/extras-0-conv-0.bin",
-    "mobilenetv2ssd/layers/extras-0-conv-3.bin",
-    "mobilenetv2ssd/layers/extras-0-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/extras-0-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/extras-0-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/extras-0-conv-6.bin"};
 const char *extras1[] = {
-    "mobilenetv2ssd/layers/extras-1-conv-0.bin",
-    "mobilenetv2ssd/layers/extras-1-conv-3.bin",
-    "mobilenetv2ssd/layers/extras-1-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/extras-1-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/extras-1-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/extras-1-conv-6.bin"};
 const char *extras2[] = {
-    "mobilenetv2ssd/layers/extras-2-conv-0.bin",
-    "mobilenetv2ssd/layers/extras-2-conv-3.bin",
-    "mobilenetv2ssd/layers/extras-2-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/extras-2-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/extras-2-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/extras-2-conv-6.bin"};
 const char *extras3[] = {
-    "mobilenetv2ssd/layers/extras-3-conv-0.bin",
-    "mobilenetv2ssd/layers/extras-3-conv-3.bin",
-    "mobilenetv2ssd/layers/extras-3-conv-6.bin"};
+    "bdd-mobilenetv2ssd/layers/extras-3-conv-0.bin",
+    "bdd-mobilenetv2ssd/layers/extras-3-conv-3.bin",
+    "bdd-mobilenetv2ssd/layers/extras-3-conv-6.bin"};
 
 const char *classification_header0[] = {
-    "mobilenetv2ssd/layers/classification_headers-0-0.bin",
-    "mobilenetv2ssd/layers/classification_headers-0-3.bin"};
+    "bdd-mobilenetv2ssd/layers/classification_headers-0-0.bin",
+    "bdd-mobilenetv2ssd/layers/classification_headers-0-3.bin"};
 const char *classification_header1[] = {
-    "mobilenetv2ssd/layers/classification_headers-1-0.bin",
-    "mobilenetv2ssd/layers/classification_headers-1-3.bin"};
+    "bdd-mobilenetv2ssd/layers/classification_headers-1-0.bin",
+    "bdd-mobilenetv2ssd/layers/classification_headers-1-3.bin"};
 const char *classification_header2[] = {
-    "mobilenetv2ssd/layers/classification_headers-2-0.bin",
-    "mobilenetv2ssd/layers/classification_headers-2-3.bin"};
+    "bdd-mobilenetv2ssd/layers/classification_headers-2-0.bin",
+    "bdd-mobilenetv2ssd/layers/classification_headers-2-3.bin"};
 const char *classification_header3[] = {
-    "mobilenetv2ssd/layers/classification_headers-3-0.bin",
-    "mobilenetv2ssd/layers/classification_headers-3-3.bin"};
+    "bdd-mobilenetv2ssd/layers/classification_headers-3-0.bin",
+    "bdd-mobilenetv2ssd/layers/classification_headers-3-3.bin"};
 const char *classification_header4[] = {
-    "mobilenetv2ssd/layers/classification_headers-4-0.bin",
-    "mobilenetv2ssd/layers/classification_headers-4-3.bin"};
+    "bdd-mobilenetv2ssd/layers/classification_headers-4-0.bin",
+    "bdd-mobilenetv2ssd/layers/classification_headers-4-3.bin"};
 
-const char *classification_header5 = "mobilenetv2ssd/layers/classification_headers-5.bin";
+const char *classification_header5 = "bdd-mobilenetv2ssd/layers/classification_headers-5.bin";
 
 const char *regression_header0[] = {
-    "mobilenetv2ssd/layers/regression_headers-0-0.bin",
-    "mobilenetv2ssd/layers/regression_headers-0-3.bin"};
+    "bdd-mobilenetv2ssd/layers/regression_headers-0-0.bin",
+    "bdd-mobilenetv2ssd/layers/regression_headers-0-3.bin"};
 const char *regression_header1[] = {
-    "mobilenetv2ssd/layers/regression_headers-1-0.bin",
-    "mobilenetv2ssd/layers/regression_headers-1-3.bin"};
+    "bdd-mobilenetv2ssd/layers/regression_headers-1-0.bin",
+    "bdd-mobilenetv2ssd/layers/regression_headers-1-3.bin"};
 const char *regression_header2[] = {
-    "mobilenetv2ssd/layers/regression_headers-2-0.bin",
-    "mobilenetv2ssd/layers/regression_headers-2-3.bin"};
+    "bdd-mobilenetv2ssd/layers/regression_headers-2-0.bin",
+    "bdd-mobilenetv2ssd/layers/regression_headers-2-3.bin"};
 const char *regression_header3[] = {
-    "mobilenetv2ssd/layers/regression_headers-3-0.bin",
-    "mobilenetv2ssd/layers/regression_headers-3-3.bin"};
+    "bdd-mobilenetv2ssd/layers/regression_headers-3-0.bin",
+    "bdd-mobilenetv2ssd/layers/regression_headers-3-3.bin"};
 const char *regression_header4[] = {
-    "mobilenetv2ssd/layers/regression_headers-4-0.bin",
-    "mobilenetv2ssd/layers/regression_headers-4-3.bin"};
+    "bdd-mobilenetv2ssd/layers/regression_headers-4-0.bin",
+    "bdd-mobilenetv2ssd/layers/regression_headers-4-3.bin"};
 
-const char *regression_header5 = "mobilenetv2ssd/layers/regression_headers-5.bin";
+const char *regression_header5 = "bdd-mobilenetv2ssd/layers/regression_headers-5.bin";
 
 
 int main()
 {
 
-    downloadWeightsifDoNotExist(input_bin, "mobilenetv2ssd", "https://cloud.hipert.unimore.it/s/x4ZfxBKN23zAJQp/download");
+    // downloadWeightsifDoNotExist(input_bin, "bdd-mobilenetv2ssd", "https://cloud.hipert.unimore.it/s//download");
 
-    int classes = 21;
+    int classes = 11;
 
     // Network layout
     tk::dnn::dataDim_t dim(1, 3, 300, 300, 1);
@@ -325,40 +325,40 @@ int main()
     tk::dnn::Route rout_ch_0(&net, header_0, 1);
     tk::dnn::Conv2d ch_0_conv1(&net, 576, 3, 3, 1, 1, 1, 1, classification_header0[0], true, false, 576, true);
     tk::dnn::Activation ch_relu_0_1(&net, CUDNN_ACTIVATION_CLIPPED_RELU, 6);
-    tk::dnn::Conv2d ch_0_conv2(&net, 126, 1, 1, 1, 1, 0, 0, classification_header0[1], false);
+    tk::dnn::Conv2d ch_0_conv2(&net, 66, 1, 1, 1, 1, 0, 0, classification_header0[1], false);
     tk::dnn::Layer *conf0[1] = {&ch_0_conv2};
 
     // // classification header 1
     tk::dnn::Route rout_ch_1(&net, header_1, 1);
     tk::dnn::Conv2d ch_1_conv1(&net, 1280, 3, 3, 1, 1, 1, 1, classification_header1[0], true, false, 1280, true);
     tk::dnn::Activation ch_relu_1_1(&net, CUDNN_ACTIVATION_CLIPPED_RELU, 6);
-    tk::dnn::Conv2d ch_1_conv2(&net, 126, 1, 1, 1, 1, 0, 0, classification_header1[1], false);
+    tk::dnn::Conv2d ch_1_conv2(&net, 66, 1, 1, 1, 1, 0, 0, classification_header1[1], false);
     tk::dnn::Layer *conf1[1] = {&ch_1_conv2};
 
     // //classification header 2
     tk::dnn::Route rout_ch_2(&net, header_2, 1);
     tk::dnn::Conv2d ch_2_conv1(&net, 512, 3, 3, 1, 1, 1, 1, classification_header2[0], true, false, 512, true);
     tk::dnn::Activation ch_relu_2_1(&net, CUDNN_ACTIVATION_CLIPPED_RELU, 6);
-    tk::dnn::Conv2d ch_2_conv2(&net, 126, 1, 1, 1, 1, 0, 0, classification_header2[1], false);
+    tk::dnn::Conv2d ch_2_conv2(&net, 66, 1, 1, 1, 1, 0, 0, classification_header2[1], false);
     tk::dnn::Layer *conf2[1] = {&ch_2_conv2};
 
     // //classification header 3
     tk::dnn::Route rout_ch_3(&net, header_3, 1);
     tk::dnn::Conv2d ch_3_conv1(&net, 256, 3, 3, 1, 1, 1, 1, classification_header3[0], true, false, 256, true);
     tk::dnn::Activation ch_relu_3_1(&net, CUDNN_ACTIVATION_CLIPPED_RELU, 6);
-    tk::dnn::Conv2d ch_3_conv2(&net, 126, 1, 1, 1, 1, 0, 0, classification_header3[1], false);
+    tk::dnn::Conv2d ch_3_conv2(&net, 66, 1, 1, 1, 1, 0, 0, classification_header3[1], false);
     tk::dnn::Layer *conf3[1] = {&ch_3_conv2};
 
     // //classification header 4
     tk::dnn::Route rout_ch_4(&net, header_4, 1);
     tk::dnn::Conv2d ch_4_conv1(&net, 256, 3, 3, 1, 1, 1, 1, classification_header4[0], true, false, 256, true);
     tk::dnn::Activation ch_relu_4_1(&net, CUDNN_ACTIVATION_CLIPPED_RELU, 6);
-    tk::dnn::Conv2d ch_4_conv2(&net, 126, 1, 1, 1, 1, 0, 0, classification_header4[1], false);
+    tk::dnn::Conv2d ch_4_conv2(&net, 66, 1, 1, 1, 1, 0, 0, classification_header4[1], false);
     tk::dnn::Layer *conf4[1] = {&ch_4_conv2};
 
     // //classification header 5
     tk::dnn::Route rout_ch_5(&net, header_5, 1);
-    tk::dnn::Conv2d ch_5_conv(&net, 126, 1, 1, 1, 1, 0, 0, classification_header5, false);
+    tk::dnn::Conv2d ch_5_conv(&net, 66, 1, 1, 1, 1, 0, 0, classification_header5, false);
     ch_5_conv.setFinal();
     tk::dnn::Layer *conf5[1] = {&ch_5_conv};
 
@@ -471,7 +471,7 @@ int main()
     net.print();
 
     // convert network to tensorRT
-    tk::dnn::NetworkRT netRT(&net, net.getNetworkRTName("mobilenetv2ssd"));
+    tk::dnn::NetworkRT netRT(&net, net.getNetworkRTName("bdd-mobilenetv2ssd"));
 
     tk::dnn::dataDim_t dim1 = dim; //input dim
     printCenteredTitle(" CUDNN inference ", '=', 30);

@@ -6,12 +6,12 @@ int main()
 {
 
     // Network layout
-    tk::dnn::dataDim_t dim(1, 3, 416, 416, 1);
+    tk::dnn::dataDim_t dim(1, 3, 320, 544, 1);
     tk::dnn::Network net(dim);
 
-    // create csresnext50-panet-spp model
-    std::string bin_path = "csresnext50-panet-spp";
-    int classes = 80;
+    // create bdd-csresnext50-panet-spp model
+    std::string bin_path = "bdd-csresnext50-panet-spp";
+    int classes = 10;
     tk::dnn::Yolo *yolo[3];
 
     std::string input_bin = bin_path + "/layers/input.bin";
@@ -121,7 +121,7 @@ int main()
     std::string g126_bin = bin_path + "/layers/g126.bin";
     std::string g137_bin = bin_path + "/layers/g137.bin";
 
-    downloadWeightsifDoNotExist(input_bin, bin_path, "https://cloud.hipert.unimore.it/s/Kcs4xBozwY4wFx8/download");
+    // downloadWeightsifDoNotExist(input_bin, bin_path, "https://cloud.hipert.unimore.it/s//download");
 
     tk::dnn::Conv2d c0(&net, 64, 7, 7, 2, 2, 3, 3, c0_bin, true);
     tk::dnn::Activation a0(&net, tk::dnn::ACTIVATION_LEAKY);
@@ -407,7 +407,7 @@ int main()
 
     tk::dnn::Conv2d c113(&net, 256, 3, 3, 1, 1, 1, 1, c113_bin, true);
     tk::dnn::Activation a113(&net, tk::dnn::ACTIVATION_LEAKY);
-    tk::dnn::Conv2d c114(&net, 255, 1, 1, 1, 1, 0, 0, c114_bin, false);
+    tk::dnn::Conv2d c114(&net, 45, 1, 1, 1, 1, 0, 0, c114_bin, false);
     tk::dnn::Yolo yolo115(&net, classes, 3, g115_bin);
 
     tk::dnn::Layer *r116_layers[1] = {&a112};
@@ -430,7 +430,7 @@ int main()
 
     tk::dnn::Conv2d c124(&net, 512, 3, 3, 1, 1, 1, 1, c124_bin, true);
     tk::dnn::Activation a124(&net, tk::dnn::ACTIVATION_LEAKY);
-    tk::dnn::Conv2d c125(&net, 255, 1, 1, 1, 1, 0, 0, c125_bin, false);
+    tk::dnn::Conv2d c125(&net, 45, 1, 1, 1, 1, 0, 0, c125_bin, false);
     tk::dnn::Yolo yolo126(&net, classes, 3, g126_bin);
 
     tk::dnn::Layer *r127_layers[1] = {&a123};
@@ -453,7 +453,7 @@ int main()
 
     tk::dnn::Conv2d c135(&net, 1024, 3, 3, 1, 1, 1, 1, c135_bin, true);
     tk::dnn::Activation a135(&net, tk::dnn::ACTIVATION_LEAKY);
-    tk::dnn::Conv2d c136(&net, 255, 1, 1, 1, 1, 0, 0, c136_bin, false);
+    tk::dnn::Conv2d c136(&net, 45, 1, 1, 1, 1, 0, 0, c136_bin, false);
     tk::dnn::Yolo yolo137(&net, classes, 3, g137_bin);
 
     yolo[0] = &yolo115;
@@ -463,7 +463,7 @@ int main()
     // fill classes names
     for (int i = 0; i < 3; i++)
     {
-        yolo[i]->classesNames = {"person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
+        yolo[i]->classesNames = {"person","car","truck","bus","motor","bike","rider","traffic light","traffic sign","train"};
     }
 
     // Load input
@@ -475,7 +475,7 @@ int main()
     net.print();
 
     // //convert network to tensorRT
-    tk::dnn::NetworkRT netRT(&net, net.getNetworkRTName("csresnext50-panet-spp"));
+    tk::dnn::NetworkRT netRT(&net, net.getNetworkRTName("bdd-csresnext50-panet-spp"));
 
     // the network have 3 outputs
     tk::dnn::dataDim_t out_dim[3];

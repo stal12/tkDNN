@@ -1,7 +1,10 @@
-#include<cassert>
 #include "../kernels.h"
 
 class RouteRT : public IPlugin {
+
+	/**
+		THIS IS NOT USED ANYMORE
+	*/
 
 public:
 	RouteRT() {

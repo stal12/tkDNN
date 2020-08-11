@@ -87,7 +87,7 @@ void Yolo3Detection::postprocess(){
     //get yolo outputs
     dnnType *rt_out[netRT->pluginFactory->n_yolos]; 
     for(int i=0; i<netRT->pluginFactory->n_yolos; i++) {
-        rt_out[i] = (dnnType*)netRT->buffersRT[i+1];
+        rt_out[i] = (dnnType*)netRT->buffersRT[i+1] + netRT->buffersDIM[i+i].tot() * batchID;
     }
 
     float x_ratio =  float(originalSize.width) / float(netRT->input_dim.w);

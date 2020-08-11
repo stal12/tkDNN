@@ -1,4 +1,3 @@
-#include<cassert>
 
 class FlattenConcatRT : public IPlugin {
 
@@ -24,7 +23,9 @@ public:
 	}
 
 	void configure(const Dims* inputDims, int nbInputs, const Dims* outputDims, int nbOutputs, int maxBatchSize) override {
-		assert(nbOutputs == 1 && nbInputs ==1);
+		if(nbOutputs == 1 && nbInputs ==1) {
+			FatalError("input outputs size wrong");
+		}
 		rows = inputDims[0].d[0];
 		cols = inputDims[0].d[1] * inputDims[0].d[2];
 		c = inputDims[0].d[0] * inputDims[0].d[1] * inputDims[0].d[2];
@@ -47,11 +48,15 @@ public:
 	virtual int enqueue(int batchSize, const void*const * inputs, void** outputs, void* workspace, cudaStream_t stream) override {
 		dnnType *srcData = (dnnType*)reinterpret_cast<const dnnType*>(inputs[0]);
 		dnnType *dstData = reinterpret_cast<dnnType*>(outputs[0]);
-		checkCuda( cudaMemcpy(dstData, srcData, rows*cols*sizeof(dnnType), cudaMemcpyDeviceToDevice));
-	
-		float const alpha(1.0);
-		float const beta(0.0);
-		checkERROR( cublasSgeam( handle, CUBLAS_OP_T, CUBLAS_OP_N, rows, cols, &alpha, srcData, cols, &beta, srcData, rows, dstData, rows ));
+		checkCuda( cudaMemcpyAsync(dstData, srcData, batchSize*rows*cols*sizeof(dnnType), cudaMemcpyDeviceToDevice, stream));
+
+		checkERROR( cublasSetStream(handle, stream) );	
+		for(int i=0; i<batchSize; i++) {
+			float const alpha(1.0);
+			float const beta(0.0);
+			int offset = i*rows*cols;
+			checkERROR( cublasSgeam( handle, CUBLAS_OP_T, CUBLAS_OP_N, rows, cols, &alpha, srcData + offset, cols, &beta, srcData + offset, rows, dstData + offset, rows ));
+		}
 		return 0;
 	}
 

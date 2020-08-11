@@ -26,13 +26,11 @@ namespace tk { namespace dnn {
 
 class DetectionNN {
 
-    protected:
+	public:
         tk::dnn::NetworkRT *netRT = nullptr;
         dnnType *input_d;
 
         cv::Size originalSize;
-
-        cv::Scalar colors[256];
 
 #ifdef OPENCV_CUDACONTRIB
         cv::cuda::GpuMat bgr[3];
@@ -64,6 +62,8 @@ class DetectionNN {
         std::vector<tk::dnn::box> detected; /*bounding boxes in output*/
         std::vector<double> stats; /*keeps track of inference times (ms)*/
         std::vector<std::string> classesNames;
+
+        cv::Scalar colors[256];
 
         DetectionNN() {};
         ~DetectionNN(){};

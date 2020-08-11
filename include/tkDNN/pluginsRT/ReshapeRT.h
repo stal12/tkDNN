@@ -1,4 +1,3 @@
-#include<cassert>
 
 class ReshapeRT : public IPlugin {
 
@@ -40,7 +39,7 @@ public:
 		dnnType *srcData = (dnnType*)reinterpret_cast<const dnnType*>(inputs[0]);
 		dnnType *dstData = reinterpret_cast<dnnType*>(outputs[0]);
 
-		checkCuda( cudaMemcpy(dstData, srcData, c*h*w*sizeof(dnnType), cudaMemcpyDeviceToDevice));
+		checkCuda( cudaMemcpyAsync(dstData, srcData, batchSize*c*h*w*sizeof(dnnType), cudaMemcpyDeviceToDevice, stream));
 		return 0;
 	}
 

@@ -9,7 +9,7 @@ namespace tk { namespace dnn {
 
 class Yolo3Detection : public DetectionNN
 {
-private:
+public:
     int num = 0;
     int nMasks = 0;
     int nDets = 0;
@@ -19,12 +19,15 @@ private:
     tk::dnn::Yolo* getYoloLayer(int n=0);
 
     cv::Mat bgr_h;
+
+    int batchID = 0;
     
 public:
     Yolo3Detection() {};
     ~Yolo3Detection() {}; 
 
     bool init(const std::string& tensor_path, const int n_classes=80);
+    void setBatchID(int id){batchID = id;}
     void preprocess(cv::Mat &frame);
     void postprocess();
 };
