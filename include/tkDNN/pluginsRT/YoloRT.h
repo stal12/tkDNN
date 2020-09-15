@@ -1,3 +1,4 @@
+#include<cassert>
 #include "../kernels.h"
 
 #define YOLORT_CLASSNAME_W 256

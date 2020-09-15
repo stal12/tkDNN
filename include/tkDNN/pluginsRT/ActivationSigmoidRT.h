@@ -1,3 +1,4 @@
+#include<cassert>
 #include "../kernels.h"
 
 class ActivationSigmoidRT : public IPlugin {
