@@ -26,7 +26,7 @@ namespace tk { namespace dnn {
 
 class DetectionNN {
 
-    protected:
+    public:
         tk::dnn::NetworkRT *netRT = nullptr;
         dnnType *input_d;
 
