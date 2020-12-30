@@ -20,7 +20,7 @@ bool Yolo3Detection::init(const std::string& tensor_path, const int n_classes, c
 
     for(int i=0; i<netRT->pluginFactory->n_yolos; i++) {
         YoloRT *yRT = netRT->pluginFactory->yolos[i];
-        classes = yRT->classes;
+        classes = std::min<int>(n_classes, yRT->classes);
         num = yRT->num;
         nMasks = yRT->n_masks;
 
