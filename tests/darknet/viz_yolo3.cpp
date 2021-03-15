@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     // output directory
     std::string output_viz = "viz/";
-    system( (std::string("mkdir -p ") + output_viz).c_str() );
+    int e = system( (std::string("mkdir -p ") + output_viz).c_str() );
 
     for(int i=0; i<net->num_layers; i++) {
         std::string output_png = output_viz + "/layer" + std::to_string(i) + ".png";
