@@ -1,7 +1,10 @@
 #include "Int8BatchStream.h"
 
-#include <opencv2/core/core.hpp>
+#ifdef OPENCV_HAS_DNN
 #include <opencv2/dnn/dnn.hpp>
+#endif
+
+#include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -125,9 +128,14 @@ void BatchStream::readCVimage(std::string inputFileName, std::vector<float>& res
     cv::copyMakeBorder(m_LetterboxImage, m_LetterboxImage, m_YOffset, m_YOffset, m_XOffset,
                     m_XOffset, cv::BORDER_CONSTANT, cv::Scalar(128, 128, 128));
     m_LetterboxImage.convertTo(m_LetterboxImage, CV_32FC3, 1 / 255.0);
-    // converting to RGB and NCHW format
-    m_LetterboxImage = cv::dnn::blobFromImage(m_LetterboxImage);
-    res.assign(m_LetterboxImage.begin<float>(), m_LetterboxImage.end<float>());
+    
+    #ifdef OPENCV_HAS_DNN
+        // converting to RGB and NCHW format
+        m_LetterboxImage = cv::dnn::blobFromImage(m_LetterboxImage);
+        res.assign(m_LetterboxImage.begin<float>(), m_LetterboxImage.end<float>());
+    #else
+        std::cout<<COL_REDB<<"!! SKIPPING A STEP BECAUSE OPENCVDNN MODULE IS NOT COMPILED, THIS WILL NO WORK !!"<<COL_END<<"\n";
+    #endif
 }
 
 void BatchStream::readLabels(std::string inputFileName, std::vector<float>& ris) {
