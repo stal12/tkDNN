@@ -3,15 +3,18 @@ tkDNN is a Deep Neural Network library built with cuDNN and tensorRT primitives,
 The main goal of this project is to exploit NVIDIA boards as much as possible to obtain the best inference performance. It does not allow training. 
 
 
-If you use tkDNN in your research, please cite one of the following papers. For use in commercial solutions, write at gattifrancesco@hotmail.it and micaela.verucchi@unimore.it or refer to https://hipert.unimore.it/ .
+If you use tkDNN in your research, please cite the [following paper](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9212130&casa_token=sQTJXi7tJNoAAAAA:BguH9xCIY48MxbtDS3LXzIXzO-9sWArm7Hd7y7BwaLmqRuM_Gx8bOYizFPNMNtpo5K0kB-P-). For use in commercial solutions, write at gattifrancesco@hotmail.it and micaela.verucchi@unimore.it or refer to https://hipert.unimore.it/ .
 
 ```
-Accepted paper @ IRC 2020, will soon be published.
-M. Verucchi, L. Bartoli, F. Bagni, F. Gatti, P. Burgio and M. Bertogna, "Real-Time clustering and LiDAR-camera fusion on embedded platforms for self-driving cars",  in proceedings in IEEE Robotic Computing (2020)
-
-Accepted paper @ ETFA 2020, will soon be published.
-M. Verucchi, G. Brilli, D. Sapienza, M. Verasani, M. Arena, F. Gatti, A. Capotondi, R. Cavicchioli, M. Bertogna, M. Solieri
-"A Systematic Assessment of Embedded Neural Networks for Object Detection", in IEEE International Conference on Emerging Technologies and Factory Automation (2020)
+@inproceedings{verucchi2020systematic,
+  title={A Systematic Assessment of Embedded Neural Networks for Object Detection},
+  author={Verucchi, Micaela and Brilli, Gianluca and Sapienza, Davide and Verasani, Mattia and Arena, Marco and Gatti, Francesco and Capotondi, Alessandro and Cavicchioli, Roberto and Bertogna, Marko and Solieri, Marco},
+  booktitle={2020 25th IEEE International Conference on Emerging Technologies and Factory Automation (ETFA)},
+  volume={1},
+  pages={937--944},
+  year={2020},
+  organization={IEEE}
+}
 ```
 
 ## FPS Results
@@ -166,6 +169,16 @@ cd pytorch-ssd
 conda env create -f env_mobv2ssd.yml
 python run_ssd_live_demo.py mb2-ssd-lite <pth-model-fil> <labels-file>
 ```
+### 5)Export weights for CenterTrack
+To get the weights needed to run CenterTrack tests use [this](https://github.com/sapienzadavide/CenterTrack.git) fork of the original CenterTrack. 
+```
+git clone https://github.com/sapienzadavide/CenterTrack.git
+```
+* follow the instruction in the README.md and INSTALL.md
+
+```
+python demo.py tracking,ddd --load_model ../models/nuScenes_3Dtracking.pth --dataset nuscenes --pre_hm --track_thresh 0.1 --demo /path/to/image/or/folder/or/video/or/webcam --test_focal_length 633 --exp_wo --exp_wo_dim 512 --input_h 512 --input_w 512
+```
 
 ## Darknet Parser
 tkDNN implement and easy parser for darknet cfg files, a network can be converted with *tk::dnn::darknetParser*:
@@ -229,6 +242,28 @@ N.b. By default it is used FP32 inference
 
 
 ![demo](https://user-images.githubusercontent.com/11562617/72547657-540e7800-388d-11ea-83c6-49dfea2a0607.gif)
+
+### Run the 3D demo
+
+To run the 3D object detection demo follow these steps (example with CenterNet based on DLA34):
+```
+rm dla34_cnet3d_fp32.rt        # be sure to delete(or move) old tensorRT files
+./test_dla34_cnet3d            # run the yolo test (is slow)
+./demo3D dla34_cnet3d_fp32.rt ../demo/yolo_test.mp4 c
+```
+The demo3D program takes the same parameters of the demo program:
+```
+./demo <network-rt-file> <path-to-video> <kind-of-network> <number-of-classes>
+```
+
+#### Run the 3D OD-tracking demo
+
+To run the 3D object detection & tracking demo follow these steps (example with CenterTrack based on DLA34):
+```
+rm dla34_cnet3d_track_fp32.rt  # be sure to delete(or move) old tensorRT files
+./test_dla34_cnet3d_track      # run the yolo test (is slow)
+./demo3D dla34_cnet3d_track_fp32.rt ../demo/yolo_test.mp4 t
+```
 
 ### FP16 inference
 
@@ -349,7 +384,8 @@ This demo also creates a json file named ```net_name_COCO_res.json``` containing
 | csresnext50-panet-spp    | Cross Stage Partial Network <sup>7</sup>     | [COCO 2014](http://cocodataset.org/)                          | 80        | 416x416       | [weights](https://cloud.hipert.unimore.it/s/Kcs4xBozwY4wFx8/download)     |
 | yolo4             | Yolov4 <sup>8</sup>                           | [COCO 2017](http://cocodataset.org/)                          | 80        | 416x416       | [weights](https://cloud.hipert.unimore.it/s/d97CFzYqCPCp5Hg/download)     |
 | yolo4_berkeley             | Yolov4 <sup>8</sup>                           | [BDD100K  ](https://bair.berkeley.edu/blog/2018/05/30/bdd/)                          | 10        | 540x320       | [weights](https://cloud.hipert.unimore.it/s/nkWFa5fgb4NTdnB/download)     |
-| yolo4tiny             | Yolov4 tiny                           | [COCO 2017](http://cocodataset.org/)                          | 80        | 416x416       | [weights](https://cloud.hipert.unimore.it/s/iRnc4pSqmx78gJs/download)     |
+| yolo4tiny             | Yolov4 tiny <sup>9</sup>                           | [COCO 2017](http://cocodataset.org/)                          | 80        | 416x416       | [weights](https://cloud.hipert.unimore.it/s/iRnc4pSqmx78gJs/download)     |
+| yolo4x             | Yolov4x-mish  <sup>9</sup>                          | [COCO 2017](http://cocodataset.org/)                          | 80        | 672x672       | [weights](https://cloud.hipert.unimore.it/s/BLPpiAigZJLorQD/download)     |
 
 
 ## References
@@ -362,3 +398,4 @@ This demo also creates a json file named ```net_name_COCO_res.json``` containing
 6. He, Kaiming, et al. "Deep residual learning for image recognition." Proceedings of the IEEE conference on computer vision and pattern recognition. 2016.
 7. Wang, Chien-Yao, et al. "CSPNet: A New Backbone that can Enhance Learning Capability of CNN." arXiv preprint arXiv:1911.11929 (2019).
 8. Bochkovskiy, Alexey, Chien-Yao Wang, and Hong-Yuan Mark Liao. "YOLOv4: Optimal Speed and Accuracy of Object Detection." arXiv preprint arXiv:2004.10934 (2020).
+9. Bochkovskiy, Alexey, "Yolo v4, v3 and v2 for Windows and Linux" (https://github.com/AlexeyAB/darknet)
