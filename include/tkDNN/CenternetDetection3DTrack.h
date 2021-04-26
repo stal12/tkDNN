@@ -51,7 +51,7 @@ struct trackingRes
 
 class CenternetDetection3DTrack : public DetectionNN3D
 {
-private:
+public:
     tk::dnn::dataDim_t dim;
     tk::dnn::dataDim_t dim2;
     tk::dnn::dataDim_t dim_hm; 

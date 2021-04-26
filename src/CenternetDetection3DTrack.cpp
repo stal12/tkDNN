@@ -361,6 +361,8 @@ void CenternetDetection3DTrack::preprocess(cv::Mat &frame){
     sz = imageF.size();
  
     cv::warpAffine(imageF, imageF, trans, cv::Size(dim.w, dim.h), cv::INTER_LINEAR );
+
+    cv::imshow("warp", imageF);
  
     sz = imageF.size();
     imageF.convertTo(imageF, CV_32FC3, 1/255.0); 
