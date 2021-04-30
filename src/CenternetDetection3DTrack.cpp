@@ -3,13 +3,16 @@
 
 namespace tk { namespace dnn {
 
-bool CenternetDetection3DTrack::init(const std::string& tensor_path, const int n_classes){
-    std::cout<<(tensor_path).c_str()<<"\n";
+
+bool CenternetDetection3DTrack::init(const std::string& tensor_path, const int n_classes, const int n_batches, 
+                                    const float conf_thresh, const std::vector<cv::Mat>& k_calibs) {
     netRT = new tk::dnn::NetworkRT(NULL, (tensor_path).c_str() );
     
     dim = netRT->input_dim;
     dim.c = 3;
-
+    nBatches = n_batches;
+    confThreshold = conf_thresh;
+    inputCalibs = k_calibs;
     init_preprocessing();
     init_pre_inf();
     init_postprocessing();
@@ -35,7 +38,10 @@ bool CenternetDetection3DTrack::init_preprocessing(){
     dst2.at<float>(2,0)=dst2.at<float>(1,0) + (-dst2.at<float>(0,1)+dst2.at<float>(1,1) );
     dst2.at<float>(2,1)=dst2.at<float>(1,1) + (dst2.at<float>(0,0)-dst2.at<float>(1,0) );
 
-
+    for(int bi=0; bi<nBatches; bi++) {
+        sz_old.push_back(cv::Size(0,0));
+    }
+    
 #ifdef OPENCV_CUDACONTRIB
 
     checkCuda( cudaMalloc(&mean_d, 3 * sizeof(float)) );
@@ -46,13 +52,13 @@ bool CenternetDetection3DTrack::init_preprocessing(){
     checkCuda(cudaMemcpy(mean_d, mean, 3*sizeof(float), cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(stddev_d, stddev, 3*sizeof(float), cudaMemcpyHostToDevice));
 #else
-    checkCuda(cudaMallocHost(&input, sizeof(dnnType)*dim.tot()));
+    checkCuda(cudaMallocHost(&input, sizeof(dnnType)*dim.tot() * nBatches));
     mean << 0.40789655, 0.44719303, 0.47026116;
     stddev << 0.2886383, 0.27408165, 0.27809834;
     
 #endif
 
-    checkCuda(cudaMalloc(&input_d, sizeof(dnnType)*netRT->input_dim.tot()));
+    checkCuda(cudaMalloc(&input_d, sizeof(dnnType)*netRT->input_dim.tot() * nBatches));
     checkCuda(cudaMalloc(&input_pre_inf_d, sizeof(dnnType)*dim.tot()));
     checkCuda( cudaMalloc(&d_ptrs, dim.tot() * sizeof(float)) );
 }
@@ -181,19 +187,16 @@ bool CenternetDetection3DTrack::init_postprocessing(){
 
     checkCuda( cudaMallocHost(&target_coords, 4 * K *sizeof(float)) );
 
-    calibs = cv::Mat(cv::Size(4,3), CV_32F);
-    calibs.at<float>(0,0) = 633.0;
-    calibs.at<float>(0,1) = 0.0;
-    calibs.at<float>(0,2) = 0.0; //w/2
-    calibs.at<float>(0,3) = 0.0;
-    calibs.at<float>(1,0) = 0.0;
-    calibs.at<float>(1,1) = 633.0;
-    calibs.at<float>(1,2) = 0.0; //h/2
-    calibs.at<float>(1,3) = 0.0;
-    calibs.at<float>(2,0) = 0.0;
-    calibs.at<float>(2,1) = 0.0;
-    calibs.at<float>(2,2) = 1.0;
-    calibs.at<float>(2,3) = 0.0;
+    for(int bi=0; bi<nBatches; bi++) {
+        cv::Mat calibs_ = cv::Mat::zeros(cv::Size(4,3), CV_32F);        
+        if(inputCalibs.size() == 0 || inputCalibs[bi].empty()) {
+            calibs_.at<float>(0,0) = 633.0;
+            calibs_.at<float>(1,1) = 633.0;
+            calibs_.at<float>(2,2) = 1.0;
+        }
+        calibs_.at<float>(2,2) = 1.0;
+        calibs.push_back(calibs_);
+    }
 
     // Alloc array used in the kernel 
     checkCuda( cudaMalloc(&src_out, K *sizeof(float)) );
@@ -276,33 +279,41 @@ void CenternetDetection3DTrack::_get_additional_inputs(){
     //None no additional input
 }
 
-void CenternetDetection3DTrack::pre_inf(){
+void CenternetDetection3DTrack::pre_inf(const int bi){
     TKDNN_TSTART
     tk::dnn::dataDim_t dim_aus;
     pre_phase_net->infer(dim_aus, nullptr);
     TKDNN_TSTOP
     checkCuda( cudaDeviceSynchronize() );
-    checkCuda( cudaMemcpy(input_d, pre_phase_net->layers[pre_phase_net->num_layers-1]->dstData, netRT->input_dim.tot()*sizeof(dnnType), cudaMemcpyDeviceToDevice) );
+    checkCuda( cudaMemcpy(input_d+ netRT->input_dim.tot()*bi, pre_phase_net->layers[pre_phase_net->num_layers-1]->dstData, netRT->input_dim.tot()*sizeof(dnnType), cudaMemcpyDeviceToDevice) );
     checkCuda( cudaDeviceSynchronize() );
 }
 
-void CenternetDetection3DTrack::preprocess(cv::Mat &frame){
-     // -----------------------------------pre-process ------------------------------------------
-
-    cv::Size sz = originalSize;
-    cv::Size sz_old;
+void CenternetDetection3DTrack::preprocess(cv::Mat &frame, const int bi, const std::vector<cv::Size>& stream_size){
+    // -----------------------------------pre-process ------------------------------------------
+    batchTracked.clear();
+    cv::Size sz = originalSize[bi];
     float scale = 1.0;
     float new_height = sz.height * scale;
     float new_width = sz.width * scale;
-    if(sz.height != sz_old.height && sz.width != sz_old.width){
-        calibs.at<float>(0,2) = new_width / 2.0f;
-        calibs.at<float>(1,2) = new_height /2.0f;
+    if(sz.height != sz_old[bi].height && sz.width != sz_old[bi].width){
+        if(inputCalibs.size() == 0 || inputCalibs[bi].empty()) {
+            calibs[bi].at<float>(0,2) = new_width / 2.0f;
+            calibs[bi].at<float>(1,2) = new_height /2.0f;
+        }
+        else {
+            calibs[bi].at<float>(0,0) = inputCalibs[bi].at<float>(0,0) * dim.w / stream_size[bi].width;
+            calibs[bi].at<float>(0,2) = inputCalibs[bi].at<float>(0,2) * dim.w / stream_size[bi].width;
+            calibs[bi].at<float>(1,1) = inputCalibs[bi].at<float>(1,1) * dim.h / stream_size[bi].height;
+            calibs[bi].at<float>(1,2) = inputCalibs[bi].at<float>(1,2) * dim.h / stream_size[bi].height;
+        }
+        
         float c[] = {new_width / 2.0f, new_height /2.0f};
         float s[] = {dim.w, dim.h};
         // float s = new_width >= new_height ? new_width : new_height;
         // ----------- get_affine_transform
         // rot_rad = pi * 0 / 100 --> 0
-        dim.print();
+        //dim.print();
         src.at<float>(0,0)=c[0];
         src.at<float>(0,1)=c[1];
         src.at<float>(1,0)=c[0];
@@ -322,7 +333,7 @@ void CenternetDetection3DTrack::preprocess(cv::Mat &frame){
         trans2 = cv::getAffineTransform( dst2, src );
         trans2.convertTo(trans_out, CV_32F);
     }
-    sz_old = sz;
+    sz_old[bi] = sz;
 #ifdef OPENCV_CUDACONTRIB
     std::cout<<"OPENCV CPMTROB\n";
     cv::cuda::GpuMat im_Orig; 
@@ -356,7 +367,7 @@ void CenternetDetection3DTrack::preprocess(cv::Mat &frame){
 #else
     std::cout<<"NO OPENCV CPMTROB\n";
     cv::Mat imageF;
-    // resize(frame, imageF, cv::Size(new_width, new_height));
+    //resize(frame, imageF, cv::Size(512, 512));
     imageF = frame;
     sz = imageF.size();
  
@@ -391,7 +402,7 @@ void CenternetDetection3DTrack::preprocess(cv::Mat &frame){
         checkCuda( cudaDeviceSynchronize() );
         iter0=false;
     }
-    pre_inf();
+    pre_inf(bi);
 
     checkCuda( cudaMemcpy(img_d, input_pre_inf_d, dim.tot()*sizeof(dnnType), cudaMemcpyDeviceToDevice) );
     checkCuda( cudaDeviceSynchronize() );
@@ -589,17 +600,17 @@ void CenternetDetection3DTrack::tracking(){
     
 }
 
-void CenternetDetection3DTrack::postprocess(){
+void CenternetDetection3DTrack::postprocess(const int bi, const bool mAP) {
     dnnType *rt_out[9];
-    rt_out[0] = (dnnType *)netRT->buffersRT[1];
-    rt_out[1] = (dnnType *)netRT->buffersRT[2];
-    rt_out[2] = (dnnType *)netRT->buffersRT[3]; 
-    rt_out[3] = (dnnType *)netRT->buffersRT[4]; 
-    rt_out[4] = (dnnType *)netRT->buffersRT[5]; 
-    rt_out[5] = (dnnType *)netRT->buffersRT[6]; 
-    rt_out[6] = (dnnType *)netRT->buffersRT[7]; 
-    rt_out[7] = (dnnType *)netRT->buffersRT[8];
-    rt_out[8] = (dnnType *)netRT->buffersRT[9];
+    rt_out[0] = (dnnType *)netRT->buffersRT[1]+ netRT->buffersDIM[1].tot()*bi;
+    rt_out[1] = (dnnType *)netRT->buffersRT[2]+ netRT->buffersDIM[2].tot()*bi;
+    rt_out[2] = (dnnType *)netRT->buffersRT[3]+ netRT->buffersDIM[3].tot()*bi; 
+    rt_out[3] = (dnnType *)netRT->buffersRT[4]+ netRT->buffersDIM[4].tot()*bi; 
+    rt_out[4] = (dnnType *)netRT->buffersRT[5]+ netRT->buffersDIM[5].tot()*bi; 
+    rt_out[5] = (dnnType *)netRT->buffersRT[6]+ netRT->buffersDIM[6].tot()*bi; 
+    rt_out[6] = (dnnType *)netRT->buffersRT[7]+ netRT->buffersDIM[7].tot()*bi; 
+    rt_out[7] = (dnnType *)netRT->buffersRT[8]+ netRT->buffersDIM[8].tot()*bi; 
+    rt_out[8] = (dnnType *)netRT->buffersRT[9]+ netRT->buffersDIM[9].tot()*bi; 
     
     // ------------------------------------ process --------------------------------------------
     
@@ -701,9 +712,9 @@ void CenternetDetection3DTrack::postprocess(){
         new_det_res.dim[2] = dim_[i+2*K];
         
         // unproject_2d_to_3d
-        new_det_res.z = dep[i] - calibs.at<float>(2,3);
-        new_det_res.x = ((float)new_det_res.ct.at<float>(0,0) * dep[i] - calibs.at<float>(0,3) - calibs.at<float>(0,2) * new_det_res.z) / calibs.at<float>(0,0);
-        new_det_res.y = ((float)new_det_res.ct.at<float>(0,1) * dep[i] - calibs.at<float>(1,3) - calibs.at<float>(1,2) * new_det_res.z) / calibs.at<float>(1,1) + (dim_[i] / 2);
+        new_det_res.z = dep[i] - calibs[bi].at<float>(2,3);
+        new_det_res.x = ((float)new_det_res.ct.at<float>(0,0) * dep[i] - calibs[bi].at<float>(0,3) - calibs[bi].at<float>(0,2) * new_det_res.z) / calibs[bi].at<float>(0,0);
+        new_det_res.y = ((float)new_det_res.ct.at<float>(0,1) * dep[i] - calibs[bi].at<float>(1,3) - calibs[bi].at<float>(1,2) * new_det_res.z) / calibs[bi].at<float>(1,1) + (dim_[i] / 2);
         
         // alpha2rot_y
         // idx = rot[:, 1] > rot[:, 5]
@@ -714,150 +725,151 @@ void CenternetDetection3DTrack::postprocess(){
             new_det_res.alpha = std::atan2(rot[2*K + i], rot[3*K + i]) -0.5 * M_PI;
         else
             new_det_res.alpha = std::atan2(rot[6*K + i], rot[7*K + i]) +0.5 * M_PI;
-        new_det_res.rot_y = (new_det_res.alpha + std::atan2((float)new_det_res.ct.at<float>(0,0) - calibs.at<float>(0,2), calibs.at<float>(0,0)));
+        new_det_res.rot_y = (new_det_res.alpha + std::atan2((float)new_det_res.ct.at<float>(0,0) - calibs[bi].at<float>(0,2), calibs[bi].at<float>(0,0)));
         new_det_res.ct = new_det_res.ct + new_det_res.tr;   //dest  
         det_res.push_back(new_det_res);    
 
     }    
     // track step
     tracking();
+    batchTracked.push_back(tr_res);
 }
 
-cv::Mat CenternetDetection3DTrack::draw(cv::Mat &frame) {
-
+void CenternetDetection3DTrack::draw(std::vector<cv::Mat>& frames) {
+    struct trackingRes t;
     float sc;
     int id;
     std::string txt;
     int baseline = 0;
     float font_scale = 0.8;
-    int thickness = 2;   
-    for(int i=0; i<count_tr; i++) {
-        id = tr_res[i].tracking_id;
-        txt = classesNames[tr_res[i].det_res.cl-1]+'-'+std::to_string(id); //forse ha bisogno di cl-1
-        cv::Size text_size = getTextSize(txt, cv::FONT_HERSHEY_SIMPLEX, font_scale, thickness, &baseline);
-        
-        if(tr_res[i].det_res.score > vis_thresh){// && tr_res[i].active!=0) {
-            if(view2d) {
-        
-                
-                cv::rectangle(frame,  cv::Point(tr_res[i].det_res.bb0.at<float>(0,0), tr_res[i].det_res.bb0.at<float>(0,1)), 
-                                    cv::Point(tr_res[i].det_res.bb1.at<float>(0,0), tr_res[i].det_res.bb1.at<float>(0,1)), tr_colors[tr_res[i].color], thickness);                      
-                cv::rectangle(frame,  cv::Point(tr_res[i].det_res.bb0.at<float>(0,0), 
-                                                tr_res[i].det_res.bb0.at<float>(0,1) - text_size.height - thickness), 
-                                    cv::Point(tr_res[i].det_res.bb0.at<float>(0,0) + text_size.width, 
-                                                tr_res[i].det_res.bb0.at<float>(0,1)), tr_colors[tr_res[i].color], -1);                      
-                                    
-                cv::putText(frame, txt, cv::Point(tr_res[i].det_res.bb0.at<float>(0,0),  
-                                                tr_res[i].det_res.bb0.at<float>(0,1) - thickness -1), 
-                                                    cv::FONT_HERSHEY_SIMPLEX, font_scale, cv::Scalar(255, 255, 255), 1);
+    int thickness = 2;
+    for(int bi=0; bi<frames.size(); ++bi) {
+        // draw dets
+        for(int i=0; i<batchTracked[bi].size(); i++) {
+            t = batchTracked[bi][i];
+            id = t.tracking_id;
+            txt = classesNames[t.det_res.cl-1]+'-'+std::to_string(id); //forse ha bisogno di cl-1
+            cv::Size text_size = getTextSize(txt, cv::FONT_HERSHEY_SIMPLEX, font_scale, thickness, &baseline);
+            
+            if(t.det_res.score > vis_thresh){// && t.active!=0) {
+                if(view2d) {
+                    cv::rectangle(frames[bi],  cv::Point(t.det_res.bb0.at<float>(0,0), t.det_res.bb0.at<float>(0,1)), 
+                                        cv::Point(t.det_res.bb1.at<float>(0,0), t.det_res.bb1.at<float>(0,1)), tr_colors[t.color], thickness);                      
+                    cv::rectangle(frames[bi],  cv::Point(t.det_res.bb0.at<float>(0,0), 
+                                                    t.det_res.bb0.at<float>(0,1) - text_size.height - thickness), 
+                                        cv::Point(t.det_res.bb0.at<float>(0,0) + text_size.width, 
+                                                    t.det_res.bb0.at<float>(0,1)), tr_colors[t.color], -1);                      
+                                        
+                    cv::putText(frames[bi], txt, cv::Point(t.det_res.bb0.at<float>(0,0),  
+                                                    t.det_res.bb0.at<float>(0,1) - thickness -1), 
+                                                        cv::FONT_HERSHEY_SIMPLEX, font_scale, cv::Scalar(255, 255, 255), 1);
 
-                cv::arrowedLine(frame, cv::Point((int)tr_res[i].det_res.ct.at<float>(0,0), 
-                                                (int)tr_res[i].det_res.ct.at<float>(0,1)), 
-                                        cv::Point((int)(tr_res[i].det_res.ct.at<float>(0,0) + tr_res[i].det_res.tr.at<float>(0,0)),
-                                                (int)(tr_res[i].det_res.ct.at<float>(0,1) + tr_res[i].det_res.tr.at<float>(0,1))),
-                                        cv::Scalar(255, 0, 255), 2);
-            }
-            //3d
-            if(!view2d && tr_res[i].det_res.z > 1){
-                r.at<float>(0,0) = std::cos(tr_res[i].det_res.rot_y);
-                r.at<float>(0,2) = std::sin(tr_res[i].det_res.rot_y);
-                r.at<float>(2,0) = -std::sin(tr_res[i].det_res.rot_y);
-                r.at<float>(2,2) = std::cos(tr_res[i].det_res.rot_y);
-
-                corners.at<float>(0,0) = tr_res[i].det_res.dim[2]/2;
-                corners.at<float>(0,1) = tr_res[i].det_res.dim[2]/2;
-                corners.at<float>(0,2) = -tr_res[i].det_res.dim[2]/2;
-                corners.at<float>(0,3) = -tr_res[i].det_res.dim[2]/2;
-                corners.at<float>(0,4) = tr_res[i].det_res.dim[2]/2;
-                corners.at<float>(0,5) = tr_res[i].det_res.dim[2]/2;
-                corners.at<float>(0,6) = -tr_res[i].det_res.dim[2]/2;
-                corners.at<float>(0,7) = -tr_res[i].det_res.dim[2]/2;
-
-                corners.at<float>(1,4) = -tr_res[i].det_res.dim[0];
-                corners.at<float>(1,5) = -tr_res[i].det_res.dim[0];
-                corners.at<float>(1,6) = -tr_res[i].det_res.dim[0];
-                corners.at<float>(1,7) = -tr_res[i].det_res.dim[0];
-                
-                corners.at<float>(2,0) = tr_res[i].det_res.dim[1]/2;
-                corners.at<float>(2,1) = -tr_res[i].det_res.dim[1]/2;
-                corners.at<float>(2,2) = -tr_res[i].det_res.dim[1]/2;
-                corners.at<float>(2,3) = tr_res[i].det_res.dim[1]/2;
-                corners.at<float>(2,4) = tr_res[i].det_res.dim[1]/2;
-                corners.at<float>(2,5) = -tr_res[i].det_res.dim[1]/2;
-                corners.at<float>(2,6) = -tr_res[i].det_res.dim[1]/2;
-                corners.at<float>(2,7) = tr_res[i].det_res.dim[1]/2;
-                
-                cv::Mat aus = r * corners;
-
-                for(int k=0; k<8; k++) {
-                    aus.at<float>(0,k) += tr_res[i].det_res.x;
-                    aus.at<float>(1,k) += tr_res[i].det_res.y;
-                    aus.at<float>(2,k) += tr_res[i].det_res.z;
+                    cv::arrowedLine(frames[bi], cv::Point((int)t.det_res.ct.at<float>(0,0), 
+                                                    (int)t.det_res.ct.at<float>(0,1)), 
+                                            cv::Point((int)(t.det_res.ct.at<float>(0,0) + t.det_res.tr.at<float>(0,0)),
+                                                    (int)(t.det_res.ct.at<float>(0,1) + t.det_res.tr.at<float>(0,1))),
+                                            cv::Scalar(255, 0, 255), 2);
                 }
-                
-                // corners.copyTo(pts3DHomo(cv::Rect(0, 0, 8, 3)));
-                for(int k1=0; k1<3; k1++) {
-                    for(int k2=0; k2<8; k2++)
-                        pts3DHomo.at<float>(k1,k2) = aus.at<float>(k1,k2); 
-                }
-                
-                aus.release();
-                aus = calibs * pts3DHomo;
-                std::vector<float> res_corners;
-                for(int k=0; k<8; k++) {
-                    res_corners.push_back(aus.at<float>(0,k) / aus.at<float>(2,k));
-                    res_corners.push_back(aus.at<float>(1,k) / aus.at<float>(2,k));
-                }
-                aus.release();
-                for(int ind_f = 3; ind_f>=0; ind_f--) {
-                    for(int j=0; j<4; j++) {
-                        cv::line(frame, cv::Point((int)res_corners.at(face_id.at(ind_f).at(j) * 2), 
-                                                (int)res_corners.at(face_id.at(ind_f).at(j) * 2 + 1)),
-                                        cv::Point((int)res_corners.at(face_id.at(ind_f).at((j+1)%4) * 2), 
-                                                (int)res_corners.at(face_id.at(ind_f).at((j+1)%4) * 2 + 1)), 
-                                        tr_colors[tr_res[i].color], 2);
-                        if(ind_f == 0 && j==3) {
-                            cv::line(frame, cv::Point((int)res_corners.at(face_id.at(ind_f).at(0) * 2), 
-                                                    (int)res_corners.at(face_id.at(ind_f).at(0) * 2 + 1)),
-                                            cv::Point((int)res_corners.at(face_id.at(ind_f).at(2) * 2), 
-                                                    (int)res_corners.at(face_id.at(ind_f).at(2) * 2 + 1)), tr_colors[tr_res[i].color], 2);
-                            cv::line(frame, cv::Point((int)res_corners.at(face_id.at(ind_f).at(1) * 2), 
-                                                    (int)res_corners.at(face_id.at(ind_f).at(1) * 2 + 1)),
-                                            cv::Point((int)res_corners.at(face_id.at(ind_f).at(3) * 2), 
-                                                    (int)res_corners.at(face_id.at(ind_f).at(3) * 2 + 1)), tr_colors[tr_res[i].color], 2);
+                //3d
+                if(!view2d && t.det_res.z > 1){
+                    r.at<float>(0,0) = std::cos(t.det_res.rot_y);
+                    r.at<float>(0,2) = std::sin(t.det_res.rot_y);
+                    r.at<float>(2,0) = -std::sin(t.det_res.rot_y);
+                    r.at<float>(2,2) = std::cos(t.det_res.rot_y);
+
+                    corners.at<float>(0,0) = t.det_res.dim[2]/2;
+                    corners.at<float>(0,1) = t.det_res.dim[2]/2;
+                    corners.at<float>(0,2) = -t.det_res.dim[2]/2;
+                    corners.at<float>(0,3) = -t.det_res.dim[2]/2;
+                    corners.at<float>(0,4) = t.det_res.dim[2]/2;
+                    corners.at<float>(0,5) = t.det_res.dim[2]/2;
+                    corners.at<float>(0,6) = -t.det_res.dim[2]/2;
+                    corners.at<float>(0,7) = -t.det_res.dim[2]/2;
+
+                    corners.at<float>(1,4) = -t.det_res.dim[0];
+                    corners.at<float>(1,5) = -t.det_res.dim[0];
+                    corners.at<float>(1,6) = -t.det_res.dim[0];
+                    corners.at<float>(1,7) = -t.det_res.dim[0];
+                    
+                    corners.at<float>(2,0) = t.det_res.dim[1]/2;
+                    corners.at<float>(2,1) = -t.det_res.dim[1]/2;
+                    corners.at<float>(2,2) = -t.det_res.dim[1]/2;
+                    corners.at<float>(2,3) = t.det_res.dim[1]/2;
+                    corners.at<float>(2,4) = t.det_res.dim[1]/2;
+                    corners.at<float>(2,5) = -t.det_res.dim[1]/2;
+                    corners.at<float>(2,6) = -t.det_res.dim[1]/2;
+                    corners.at<float>(2,7) = t.det_res.dim[1]/2;
+                    
+                    cv::Mat aus = r * corners;
+
+                    for(int k=0; k<8; k++) {
+                        aus.at<float>(0,k) += t.det_res.x;
+                        aus.at<float>(1,k) += t.det_res.y;
+                        aus.at<float>(2,k) += t.det_res.z;
+                    }
+                    
+                    // corners.copyTo(pts3DHomo(cv::Rect(0, 0, 8, 3)));
+                    for(int k1=0; k1<3; k1++) {
+                        for(int k2=0; k2<8; k2++)
+                            pts3DHomo.at<float>(k1,k2) = aus.at<float>(k1,k2); 
+                    }
+                    
+                    aus.release();
+                    aus = calibs[bi] * pts3DHomo;
+                    std::vector<float> res_corners;
+                    for(int k=0; k<8; k++) {
+                        res_corners.push_back(aus.at<float>(0,k) / aus.at<float>(2,k));
+                        res_corners.push_back(aus.at<float>(1,k) / aus.at<float>(2,k));
+                    }
+                    aus.release();
+                    for(int ind_f = 3; ind_f>=0; ind_f--) {
+                        for(int j=0; j<4; j++) {
+                            cv::line(frames[bi], cv::Point((int)res_corners.at(face_id.at(ind_f).at(j) * 2), 
+                                                    (int)res_corners.at(face_id.at(ind_f).at(j) * 2 + 1)),
+                                            cv::Point((int)res_corners.at(face_id.at(ind_f).at((j+1)%4) * 2), 
+                                                    (int)res_corners.at(face_id.at(ind_f).at((j+1)%4) * 2 + 1)), 
+                                            tr_colors[t.color], 2);
+                            if(ind_f == 0 && j==3) {
+                                cv::line(frames[bi], cv::Point((int)res_corners.at(face_id.at(ind_f).at(0) * 2), 
+                                                        (int)res_corners.at(face_id.at(ind_f).at(0) * 2 + 1)),
+                                                cv::Point((int)res_corners.at(face_id.at(ind_f).at(2) * 2), 
+                                                        (int)res_corners.at(face_id.at(ind_f).at(2) * 2 + 1)), tr_colors[t.color], 2);
+                                cv::line(frames[bi], cv::Point((int)res_corners.at(face_id.at(ind_f).at(1) * 2), 
+                                                        (int)res_corners.at(face_id.at(ind_f).at(1) * 2 + 1)),
+                                                cv::Point((int)res_corners.at(face_id.at(ind_f).at(3) * 2), 
+                                                        (int)res_corners.at(face_id.at(ind_f).at(3) * 2 + 1)), tr_colors[t.color], 2);
+                            }
                         }
                     }
-                }
-                float bb0=(1 << 10), bb1=0, bb2=(1 << 10), bb3=0;
-                for(int k=0; k<8; k++) {
-                    if(res_corners[2*k]<bb0)
-                        bb0=res_corners[2*k];
-                    if(res_corners[2*k]>bb1)
-                        bb1=res_corners[2*k];
-                    if(res_corners[2*k+1]<bb2)
-                        bb2=res_corners[2*k+1];
-                    if(res_corners[2*k+1]>bb3)
-                        bb3=res_corners[2*k+1];
-                            
-                }
-                // if(not no_bbox):
-                // cv::rectangle(frame,  cv::Point(bb0, bb2), cv::Point(bb1, bb3), 
-                //                                 tr_colors[tr_res[i].color], thickness);                      
-                cv::rectangle(frame,  cv::Point(bb0, bb2 - text_size.height - thickness), 
-                                    cv::Point(bb0 + text_size.width, bb2), tr_colors[tr_res[i].color], -1);                      
-                                    
-                cv::putText(frame, txt, cv::Point(bb0, bb2 - thickness -1), cv::FONT_HERSHEY_SIMPLEX, 
-                                                font_scale, cv::Scalar(255, 255, 255), 1);
+                    float bb0=(1 << 10), bb1=0, bb2=(1 << 10), bb3=0;
+                    for(int k=0; k<8; k++) {
+                        if(res_corners[2*k]<bb0)
+                            bb0=res_corners[2*k];
+                        if(res_corners[2*k]>bb1)
+                            bb1=res_corners[2*k];
+                        if(res_corners[2*k+1]<bb2)
+                            bb2=res_corners[2*k+1];
+                        if(res_corners[2*k+1]>bb3)
+                            bb3=res_corners[2*k+1];
+                                
+                    }
+                    // if(not no_bbox):
+                    // cv::rectangle(frame,  cv::Point(bb0, bb2), cv::Point(bb1, bb3), 
+                    //                                 tr_colors[t.color], thickness);                      
+                    cv::rectangle(frames[bi],  cv::Point(bb0, bb2 - text_size.height - thickness), 
+                                        cv::Point(bb0 + text_size.width, bb2), tr_colors[t.color], -1);                      
+                                        
+                    cv::putText(frames[bi], txt, cv::Point(bb0, bb2 - thickness -1), cv::FONT_HERSHEY_SIMPLEX, 
+                                                    font_scale, cv::Scalar(255, 255, 255), 1);
 
-                cv::arrowedLine(frame, cv::Point((int)((bb0 + bb1)/2), (int)((bb2 + bb3)/2)), 
-                                    cv::Point((int)((bb0 + bb1)/2 + tr_res[i].det_res.tr.at<float>(0,0)),
-                                            (int)((bb2 + bb3)/2 + tr_res[i].det_res.tr.at<float>(0,1))),
-                                    cv::Scalar(255, 0, 255), 2);
+                    cv::arrowedLine(frames[bi], cv::Point((int)((bb0 + bb1)/2), (int)((bb2 + bb3)/2)), 
+                                        cv::Point((int)((bb0 + bb1)/2 + t.det_res.tr.at<float>(0,0)),
+                                                (int)((bb2 + bb3)/2 + t.det_res.tr.at<float>(0,1))),
+                                        cv::Scalar(255, 0, 255), 2);
+                }
             }
         }
-
     }
-    return frame;
 }
 
 }}
