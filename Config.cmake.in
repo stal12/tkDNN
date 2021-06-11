@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(CUDAToolkit)
+find_dependency(CUDNN)
+find_dependency(Eigen3)
+find_dependency(OpenCV)
+find_dependency(yaml-cpp)
+
+include("${CMAKE_CURRENT_LIST_DIR}/tkDNNTargets.cmake")

@@ -1,5 +1,5 @@
 #include<iostream>
-#include "tkdnn.h"
+#include <tkDNN/tkdnn.h>
 
 const char *input_bin   = "mnist/input.bin";
 const char *c0_bin      = "mnist/layers/c0.bin";

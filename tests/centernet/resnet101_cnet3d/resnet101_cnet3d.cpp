@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include "kernels.h"
-#include "Yolo3Detection.h"
-#include "tkdnn.h"
+#include "tkDNN/kernels.h"
+#include "tkDNN/Yolo3Detection.h"
+#include "tkDNN/tkdnn.h"
 #include <vector>
 #include <numeric>      // std::iota
 #include <algorithm>    // std::sort

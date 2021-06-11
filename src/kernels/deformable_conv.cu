@@ -3,7 +3,7 @@
 #include <cstring>
 #include <string>
 #include <iostream> 
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 #include <errno.h>
 
 #define CUDA_KERNEL_LOOP(i, n)                          \

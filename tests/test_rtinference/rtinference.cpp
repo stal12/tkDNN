@@ -1,5 +1,5 @@
 #include<iostream>
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 #include <stdlib.h>     /* srand, rand */
 
 

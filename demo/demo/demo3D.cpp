@@ -4,8 +4,8 @@
 //#include <unistd.h>
 #include <mutex>
 
-#include "CenternetDetection3D.h"
-#include "CenternetDetection3DTrack.h"
+#include "tkDNN/CenternetDetection3D.h"
+#include "tkDNN/CenternetDetection3DTrack.h"
 
 bool gRun;
 bool SAVE_RESULT = false;

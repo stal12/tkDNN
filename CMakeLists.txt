@@ -1,158 +1,204 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18...3.19)
 
-project (tkDNN)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-if(UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -Wno-deprecated-declarations -Wno-unused-variable ")
-endif()
+project(tkDNN VERSION 1.0
+              DESCRIPTION "tkDNN project"
+              LANGUAGES CXX CUDA)
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_STANDARD 11 CACHE STRING "The C++ standard to use")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if(WIN32)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "/O2 /FS /EHsc")
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "/O2 /FS /EHsc")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif(WIN32)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/tkDNN)
 
-# project specific flags
 if(DEBUG)
     add_definitions(-DDEBUG)
 endif()
 
-add_definitions(-DTKDNN_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
-
-#-------------------------------------------------------------------------------
-# CUDA
-#-------------------------------------------------------------------------------
-find_package(CUDA 9.0 REQUIRED)
-SET(CUDA_SEPARABLE_COMPILATION ON)
-#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch=sm_30 --compiler-options '-fPIC'")
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --maxrregcount=32 -arch=sm_61 )
-
-find_package(CUDNN REQUIRED)
-include_directories(${CUDNN_INCLUDE_DIR})
-
-
-# compile
-file(GLOB tkdnn_CUSRC "src/kernels/*.cu" "src/sorting.cu")
-cuda_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CUDA_INCLUDE_DIRS} ${CUDNN_INCLUDE_DIRS})
-cuda_add_library(kernels SHARED ${tkdnn_CUSRC})
-target_link_libraries(kernels ${CUDA_CUBLAS_LIBRARIES})
-
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tkConf.cmake OPTIONAL)
 
 #-------------------------------------------------------------------------------
 # External Libraries
 #-------------------------------------------------------------------------------
+find_package(CUDAToolkit REQUIRED)
+find_package(CUDNN REQUIRED)
 find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
-
 find_package(OpenCV REQUIRED)
 find_package(OpenCV COMPONENTS dnn QUIET)
-if(OpenCV_dnn_FOUND)
-  add_definitions("-DOPENCV_HAS_DNN")
-endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENCV")
-
-
-if(OpenCV_CUDA_VERSION)
-    add_compile_definitions(OPENCV_CUDACONTRIB)
-endif()
-
-# gives problems in cross-compiling, probably malformed cmake config
 find_package(yaml-cpp REQUIRED)
 
 #-------------------------------------------------------------------------------
-# Build Libraries
+# CUDA DNN
+#-------------------------------------------------------------------------------
+set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--maxrregcount=32 -arch=sm_61")
+file(GLOB tkdnn_CUSRC "src/kernels/*.cu" "src/sorting.cu")
+add_library(dnnCUDA ${tkdnn_CUSRC})
+target_include_directories(dnnCUDA PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include> 
+    ${CUDNN_INCLUDE_DIRS}
+)
+target_link_libraries(dnnCUDA 
+    CUDA::cudart 
+    CUDA::cublas
+    ${CUDNN_LIBRARIES}
+)
+#set_target_properties(dnnCUDA PROPERTIES CUDA_ARCHITECTURES "61")
+set_target_properties(dnnCUDA PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+add_library(${PROJECT_NAME}::dnnCUDA ALIAS dnnCUDA)
+
+#-------------------------------------------------------------------------------
+# tkDNN Library
 #-------------------------------------------------------------------------------
 file(GLOB tkdnn_SRC "src/*.cpp")
-set(tkdnn_LIBS kernels ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDNN_LIBRARIES} ${OpenCV_LIBS} yaml-cpp)
+add_library(dnn SHARED ${tkdnn_SRC})
+target_link_libraries(dnn 
+    ${PROJECT_NAME}::dnnCUDA 
+    Eigen3::Eigen 
+    ${YAML_CPP_LIBRARIES}
+    ${OpenCV_LIBS}
+)
+target_compile_options(dnn PUBLIC -DTKDNN_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
+target_compile_options(dnn PUBLIC -DOPENCV)
+if(OpenCV_dnn_FOUND)
+    target_compile_options(dnn PUBLIC -DOPENCV_HAS_DNN)
+endif()
+if(OpenCV_CUDA_VERSION)
+target_compile_options(dnn PUBLIC -DOPENCV_CUDACONTRIB)
+endif()
+add_library(${PROJECT_NAME}::dnn ALIAS dnn)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CUDA_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} ${NVINFER_INCLUDES})
-add_library(tkDNN SHARED ${tkdnn_SRC})
-target_link_libraries(tkDNN ${tkdnn_LIBS})
-
-#static 
-#add_library(tkDNN_static STATIC ${tkdnn_SRC})
-#target_link_libraries(tkDNN_static ${tkdnn_LIBS})
-
-# SMALL NETS
+#-------------------------------------------------------------------------------
+# Small test
+#-------------------------------------------------------------------------------
 add_executable(test_simple tests/simple/test_simple.cpp)
-target_link_libraries(test_simple tkDNN)
+target_link_libraries(test_simple ${PROJECT_NAME}::dnn)
 
 add_executable(test_mnist tests/mnist/test_mnist.cpp)
-target_link_libraries(test_mnist tkDNN)
+target_link_libraries(test_mnist ${PROJECT_NAME}::dnn)
 
 add_executable(test_mnistRT tests/mnist/test_mnistRT.cpp)
-target_link_libraries(test_mnistRT tkDNN)
+target_link_libraries(test_mnistRT ${PROJECT_NAME}::dnn)
 
 add_executable(test_imuodom tests/imuodom/imuodom.cpp)
-target_link_libraries(test_imuodom tkDNN)
+target_link_libraries(test_imuodom ${PROJECT_NAME}::dnn)
 
-# DARKNET
+#-------------------------------------------------------------------------------
+# Darknet
+#-------------------------------------------------------------------------------
 file(GLOB darknet_SRC "tests/darknet/*.cpp")
 foreach(test_SRC ${darknet_SRC})
     get_filename_component(test_NAME "${test_SRC}" NAME_WE)
     set(test_NAME test_${test_NAME})
     add_executable(${test_NAME} ${test_SRC})
-    target_link_libraries(${test_NAME} tkDNN)
+    target_link_libraries(${test_NAME} ${PROJECT_NAME}::dnn)
 endforeach()
 
-# MOBILENET
+#-------------------------------------------------------------------------------
+# Mobilenet
+#-------------------------------------------------------------------------------
 add_executable(test_mobilenetv2ssd tests/mobilenet/mobilenetv2ssd/mobilenetv2ssd.cpp)
-target_link_libraries(test_mobilenetv2ssd tkDNN)
+target_link_libraries(test_mobilenetv2ssd ${PROJECT_NAME}::dnn)
 
 add_executable(test_bdd-mobilenetv2ssd tests/mobilenet/bdd-mobilenetv2ssd/bdd-mobilenetv2ssd.cpp)
-target_link_libraries(test_bdd-mobilenetv2ssd tkDNN)
+target_link_libraries(test_bdd-mobilenetv2ssd ${PROJECT_NAME}::dnn)
 
 add_executable(test_mobilenetv2ssd512 tests/mobilenet/mobilenetv2ssd512/mobilenetv2ssd512.cpp)
-target_link_libraries(test_mobilenetv2ssd512 tkDNN)
+target_link_libraries(test_mobilenetv2ssd512 ${PROJECT_NAME}::dnn)
 
-# BACKBONES
+#-------------------------------------------------------------------------------
+# Backbones
+#-------------------------------------------------------------------------------
 add_executable(test_resnet101 tests/backbones/resnet101/resnet101.cpp)
-target_link_libraries(test_resnet101 tkDNN)
+target_link_libraries(test_resnet101 ${PROJECT_NAME}::dnn)
 
 add_executable(test_dla34 tests/backbones/dla34/dla34.cpp)
-target_link_libraries(test_dla34 tkDNN)
+target_link_libraries(test_dla34 ${PROJECT_NAME}::dnn)
 
-# CENTERNET
+#-------------------------------------------------------------------------------
+# Centernet
+#-------------------------------------------------------------------------------
 add_executable(test_resnet101_cnet tests/centernet/resnet101_cnet/resnet101_cnet.cpp)
-target_link_libraries(test_resnet101_cnet tkDNN)
+target_link_libraries(test_resnet101_cnet ${PROJECT_NAME}::dnn)
 
 add_executable(test_dla34_cnet tests/centernet/dla34_cnet/dla34_cnet.cpp)
-target_link_libraries(test_dla34_cnet tkDNN)
+target_link_libraries(test_dla34_cnet ${PROJECT_NAME}::dnn)
 
 add_executable(test_resnet101_cnet3d tests/centernet/resnet101_cnet3d/resnet101_cnet3d.cpp)
-target_link_libraries(test_resnet101_cnet3d tkDNN)
+target_link_libraries(test_resnet101_cnet3d ${PROJECT_NAME}::dnn)
 
 add_executable(test_dla34_cnet3d tests/centernet/dla34_cnet3d/dla34_cnet3d.cpp)
-target_link_libraries(test_dla34_cnet3d tkDNN)
+target_link_libraries(test_dla34_cnet3d ${PROJECT_NAME}::dnn)
 
 add_executable(test_dla34_cnet3d_track tests/centernet/dla34_cnet3d_track/dla34_cnet3d_track.cpp)
-target_link_libraries(test_dla34_cnet3d_track tkDNN)
+target_link_libraries(test_dla34_cnet3d_track ${PROJECT_NAME}::dnn)
 
-# DEMOS
+#-------------------------------------------------------------------------------
+# Centernet
+#-------------------------------------------------------------------------------
 add_executable(test_rtinference tests/test_rtinference/rtinference.cpp)
-target_link_libraries(test_rtinference tkDNN)
+target_link_libraries(test_rtinference ${PROJECT_NAME}::dnn)
 
 add_executable(map_demo demo/demo/map.cpp)
-target_link_libraries(map_demo tkDNN)
+target_link_libraries(map_demo ${PROJECT_NAME}::dnn)
 
 add_executable(demo demo/demo/demo.cpp)
-target_link_libraries(demo tkDNN)
+target_link_libraries(demo ${PROJECT_NAME}::dnn)
 
 add_executable(demo3D demo/demo/demo3D.cpp)
-target_link_libraries(demo3D tkDNN)
+target_link_libraries(demo3D ${PROJECT_NAME}::dnn)
 
 #-------------------------------------------------------------------------------
 # Install
 #-------------------------------------------------------------------------------
-#if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-#    set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" 
-#         CACHE PATH "default install path" FORCE)
-#endif()
-message("install dir:" ${CMAKE_INSTALL_PREFIX})
-install(DIRECTORY include/ DESTINATION include/)
-install(TARGETS tkDNN kernels DESTINATION lib)
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" # source directory
-        DESTINATION "share/tkDNN/cmake/" # target directory
+install(TARGETS dnnCUDA dnn
+    DESTINATION "lib/"
+    EXPORT ${PROJECT_NAME}Targets
+)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" 
+    DESTINATION "include/"
+)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" 
+    DESTINATION "share/${PROJECT_NAME}/cmake/" 
 )
 
+#-------------------------------------------------------------------------------
+# Export Configuration
+#-------------------------------------------------------------------------------
+install(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}::
+    FILE ${PROJECT_NAME}Targets.cmake
+    DESTINATION "share/${PROJECT_NAME}/cmake/"
+)
+
+include(CMakePackageConfigHelpers)
+
+# generate the config file that is includes the exports
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION "share/${PROJECT_NAME}/cmake/"
+    NO_SET_AND_CHECK_MACRO
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+# generate the version file for the config file
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION "1.0"
+    COMPATIBILITY AnyNewerVersion
+)
+
+# export targets for build tree
+export(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}::
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
+)
+
+# install the configuration file
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+    DESTINATION "share/${PROJECT_NAME}/cmake/"
+)

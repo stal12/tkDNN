@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string.h>
 
-#include "tkdnn.h"
-#include "Network.h"
-#include "Layer.h"
+#include "tkDNN/tkdnn.h"
+#include "tkDNN/Network.h"
+#include "tkDNN/Layer.h"
 
 namespace tk { namespace dnn {
 

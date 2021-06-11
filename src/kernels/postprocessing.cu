@@ -1,4 +1,4 @@
-#include "kernelsThrust.h"
+#include "tkDNN/kernelsThrust.h"
 
 void transformDep(float *src_begin, float *src_end, float *dst_begin, float *dst_end) {
     int e = exp(-6);

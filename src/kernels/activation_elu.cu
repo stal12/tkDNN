@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 
 /**
     Exponential Linear Unit compute kernel

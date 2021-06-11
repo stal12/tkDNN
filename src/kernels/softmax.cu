@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 
 __device__ void softmax_device(float *input, int n, float temp, int stride, float *output)
 {

@@ -3,10 +3,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "tkdnn.h"
-#include "test.h"
-#include "DarknetParser.h"
-#include "NetworkViz.h"
+#include "tkDNN/tkdnn.h"
+#include "tkDNN/test.h"
+#include "tkDNN/DarknetParser.h"
+#include "tkDNN/NetworkViz.h"
 
 int main(int argc, char *argv[]) {
     if(argc <2)

@@ -1,4 +1,4 @@
-#include "Int8BatchStream.h"
+#include "tkDNN/Int8BatchStream.h"
 
 #ifdef OPENCV_HAS_DNN
 #include <opencv2/dnn/dnn.hpp>

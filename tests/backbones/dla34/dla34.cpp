@@ -1,5 +1,5 @@
 #include <iostream>
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 
 const char *input_bin = "dla34/debug/input.bin";
 const char *conv1_bin = "dla34/layers/features-init_block-conv1-conv.bin";

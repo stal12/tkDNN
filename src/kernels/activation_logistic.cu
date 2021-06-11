@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 
 __global__
 void activation_logistic(dnnType *input, dnnType *output, int size) {

@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "Layer.h"
-#include "kernels.h"
+#include "tkDNN/Layer.h"
+#include "tkDNN/kernels.h"
 
 namespace tk { namespace dnn {
 

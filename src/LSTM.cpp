@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Layer.h"
+#include "tkDNN/Layer.h"
 
 namespace tk { namespace dnn {
 

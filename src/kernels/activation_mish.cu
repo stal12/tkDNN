@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 #include <math.h>
 
 #define MISH_THRESHOLD 20

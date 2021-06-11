@@ -4,9 +4,9 @@
 //#include <unistd.h>
 #include <mutex>
 
-#include "CenternetDetection.h"
-#include "MobilenetDetection.h"
-#include "Yolo3Detection.h"
+#include "tkDNN/CenternetDetection.h"
+#include "tkDNN/MobilenetDetection.h"
+#include "tkDNN/Yolo3Detection.h"
 
 bool gRun;
 bool SAVE_RESULT = false;

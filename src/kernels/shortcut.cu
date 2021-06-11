@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 #include "assert.h"
 
 __global__ void shortcut_kernel(int size, int minw, int minh, int minc, int stride, int sample, int batch, 

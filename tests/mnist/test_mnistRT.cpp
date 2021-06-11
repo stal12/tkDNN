@@ -1,6 +1,6 @@
 #include<iostream>
 #include<cassert>
-#include "tkdnn.h"
+#include <tkDNN/tkdnn.h>
 #include "NvInfer.h"
 
 const char *input_bin   = "mnist/input.bin";

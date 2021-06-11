@@ -1,4 +1,4 @@
-#include "kernelsThrust.h"
+#include "tkDNN/kernelsThrust.h"
 
 __global__
 void normalize_kernel(float *bgr, const int dim, const float *mean, const float *stddev){

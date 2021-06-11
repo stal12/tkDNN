@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 
 __global__
 void activation_relu_ceiling(dnnType *input, dnnType *output, int size, const float ceiling) {

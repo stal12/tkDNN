@@ -7,18 +7,18 @@
 #endif
 
 #include <mutex>
-#include "utils.h"
+#include "tkDNN/utils.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "Yolo3Detection.h"
-#include "CenternetDetection.h"
-#include "MobilenetDetection.h"
+#include "tkDNN/Yolo3Detection.h"
+#include "tkDNN/CenternetDetection.h"
+#include "tkDNN/MobilenetDetection.h"
 
-#include "evaluation.h"
+#include "tkDNN/evaluation.h"
 
 #include <map>
 

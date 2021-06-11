@@ -1,5 +1,5 @@
 #include <iostream>
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 
 const char *input_bin = "resnet101/debug/input.bin";
 const char *conv1_bin = "resnet101/layers/conv1.bin";

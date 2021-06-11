@@ -1,5 +1,5 @@
-#include<iostream>
-#include "tkdnn.h"
+#include <iostream>
+#include <tkDNN/tkdnn.h>
 
 const char *input_bin   = "simple/input.bin";
 const char *c0_bin      = "simple/layers/conv1d_1.bin";

@@ -1,4 +1,4 @@
-#include "MobilenetDetection.h"
+#include "tkDNN/MobilenetDetection.h"
 
 bool boxProbCmp(const tk::dnn::box &a, const tk::dnn::box &b){
     return (a.prob > b.prob);

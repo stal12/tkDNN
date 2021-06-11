@@ -1,4 +1,4 @@
-#include "Int8Calibrator.h"
+#include "tkDNN/Int8Calibrator.h"
 
 Int8EntropyCalibrator::Int8EntropyCalibrator(BatchStream& stream, int firstBatch, 
                                              const std::string& calibTableFilePath,

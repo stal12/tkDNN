@@ -1,4 +1,5 @@
 # find the library
+find_package(CUDA REQUIRED)
 if(CUDA_FOUND)
   find_cuda_helper_libs(cudnn)
   set(CUDNN_LIBRARY ${CUDA_cudnn_LIBRARY} CACHE FILEPATH "location of the cuDNN library")

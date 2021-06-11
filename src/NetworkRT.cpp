@@ -4,12 +4,12 @@
 #include <string.h> // memcpy
 #include <stdlib.h>
 
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 
-#include "utils.h"
+#include "tkDNN/utils.h"
 #include "NvInfer.h"
-#include "NetworkRT.h"
-#include "Int8Calibrator.h"
+#include "tkDNN/NetworkRT.h"
+#include "tkDNN/Int8Calibrator.h"
 
 using namespace nvinfer1;
 

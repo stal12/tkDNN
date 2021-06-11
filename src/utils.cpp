@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "tkDNN/utils.h"
 #include <string.h>
 
 void printCenteredTitle(const char *title, char fill, int dim) {

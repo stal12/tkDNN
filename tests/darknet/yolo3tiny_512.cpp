@@ -1,8 +1,8 @@
-#include<iostream>
-#include<vector>
-#include "tkdnn.h"
-#include "test.h"
-#include "DarknetParser.h"
+#include <iostream>
+#include <vector>
+#include "tkDNN/tkdnn.h"
+#include "tkDNN/test.h"
+#include "tkDNN/DarknetParser.h"
 
 int main() {
     std::string bin_path  = "yolo3tiny_512";

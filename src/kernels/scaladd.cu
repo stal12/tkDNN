@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 #include <math.h>
 
 __global__ void scal_add_kernel(dnnType* dstData, int size, float alpha, float beta, int inc)

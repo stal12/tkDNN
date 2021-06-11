@@ -1,5 +1,5 @@
 #include <iostream>
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 
 
 const char *output_bin1 = "bdd-mobilenetv2ssd/debug/classification_headers-5.bin";

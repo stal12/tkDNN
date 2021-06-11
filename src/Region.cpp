@@ -6,8 +6,8 @@
     #include <opencv2/imgproc/imgproc.hpp>
 #endif
 
-#include "Layer.h"
-#include "kernels.h"
+#include "tkDNN/Layer.h"
+#include "tkDNN/kernels.h"
 
 namespace tk { namespace dnn {
 

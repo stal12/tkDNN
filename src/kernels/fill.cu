@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 
 __global__
 void fill_kernel(dnnType *data, int size, dnnType val) {

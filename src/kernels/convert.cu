@@ -1,4 +1,4 @@
-#include "kernels.h"
+#include "tkDNN/kernels.h"
 
 __global__
 void float2half_device(float *input, __half *output, int size) {
