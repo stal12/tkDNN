@@ -34,7 +34,7 @@ find_package(yaml-cpp REQUIRED)
 #-------------------------------------------------------------------------------
 # CUDA DNN
 #-------------------------------------------------------------------------------
-set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--maxrregcount=32 -arch=sm_61")
+set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--maxrregcount=32")
 file(GLOB tkdnn_CUSRC "src/kernels/*.cu" "src/sorting.cu")
 add_library(dnnCUDA ${tkdnn_CUSRC})
 target_include_directories(dnnCUDA PUBLIC
