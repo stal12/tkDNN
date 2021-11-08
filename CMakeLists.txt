@@ -26,7 +26,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tkConf.cmake OPTIONAL)
 #-------------------------------------------------------------------------------
 find_package(CUDAToolkit REQUIRED)
 find_package(CUDNN REQUIRED)
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 3.4.0 EXACT REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenCV COMPONENTS dnn QUIET)
 find_package(yaml-cpp REQUIRED)
