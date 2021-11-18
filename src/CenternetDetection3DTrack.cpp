@@ -20,6 +20,8 @@ bool CenternetDetection3DTrack::init(const std::string& tensor_path, const int n
     init_visualization(n_classes);
     
     count_tr.resize(nBatches, 0);
+
+    return true;
 }
 
 bool CenternetDetection3DTrack::init_preprocessing(){
@@ -63,6 +65,8 @@ bool CenternetDetection3DTrack::init_preprocessing(){
     checkCuda(cudaMalloc(&input_d, sizeof(dnnType)*netRT->input_dim.tot() * nBatches));
     checkCuda(cudaMalloc(&input_pre_inf_d, sizeof(dnnType)*dim.tot()));
     checkCuda( cudaMalloc(&d_ptrs, dim.tot() * sizeof(float)) );
+
+    return true;
 }
 
 bool CenternetDetection3DTrack::init_pre_inf(){
@@ -203,6 +207,8 @@ bool CenternetDetection3DTrack::init_postprocessing(){
     // Alloc array used in the kernel 
     checkCuda( cudaMalloc(&src_out, K *sizeof(float)) );
     checkCuda( cudaMalloc(&ids_out, K *sizeof(int)) );
+
+    return true;
 }
 
 bool CenternetDetection3DTrack::init_visualization(const int n_classes){
@@ -275,6 +281,8 @@ bool CenternetDetection3DTrack::init_visualization(const int n_classes){
     face_id.push_back({3,0,4,7});
     face_id.push_back({2,3,7,6});
     // ([[0,1,5,4], [1,2,6, 5], [2,3,7,6], [3,0,4,7]]);
+
+    return true;
 }
 
 void CenternetDetection3DTrack::_get_additional_inputs(){
@@ -311,7 +319,7 @@ void CenternetDetection3DTrack::preprocess(cv::Mat &frame, const int bi, const s
         }
         
         float c[] = {new_width / 2.0f, new_height /2.0f};
-        float s[] = {dim.w, dim.h};
+        float s[] = {(float) dim.w, (float) dim.h};
         // float s = new_width >= new_height ? new_width : new_height;
         // ----------- get_affine_transform
         // rot_rad = pi * 0 / 100 --> 0

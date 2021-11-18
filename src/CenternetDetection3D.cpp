@@ -155,6 +155,8 @@ bool CenternetDetection3D::init(const std::string& tensor_path, const int n_clas
     face_id.push_back({2,3,7,6});
     face_id.push_back({3,0,4,7});
     // ([[0,1,5,4], [1,2,6, 5], [2,3,7,6], [3,0,4,7]]);
+
+    return true;
 }
 
 void CenternetDetection3D::preprocess(cv::Mat &frame, const int bi, const std::vector<cv::Size>& stream_size){
