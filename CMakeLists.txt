@@ -173,6 +173,9 @@ target_link_libraries(demoTracker ${PROJECT_NAME}::dnn)
 add_executable(seg_demo demo/demo/seg_demo.cpp)
 target_link_libraries(seg_demo ${PROJECT_NAME}::dnn)
 
+add_executable(reID_demo demo/demo/reIDdemo.cpp)
+target_link_libraries(reID_demo ${PROJECT_NAME}::dnn)
+
 #-------------------------------------------------------------------------------
 # Install
 #-------------------------------------------------------------------------------
