@@ -6,7 +6,7 @@
 #include <vector>
 #include <numeric>      // std::iota
 #include <algorithm>    // std::sort
-// #include "utils.h"
+// #include "tkDNN/utils.h"
 
 const char *input_bin = "resnet101_cnet/debug/input.bin";
 const char *conv1_bin = "resnet101_cnet/layers/conv1.bin";

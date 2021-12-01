@@ -11,8 +11,8 @@
 
 #include <mutex>
 #include <Eigen/Dense>
-#include "utils.h"
-#include "tkdnn.h"
+#include "tkDNN/utils.h"
+#include "tkDNN/tkdnn.h"
 
 namespace tk { namespace dnn {
 

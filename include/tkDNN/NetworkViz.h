@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <opencv2/core/types.hpp>
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 
 namespace tk { namespace dnn {
 

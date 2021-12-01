@@ -7,7 +7,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 #include "BoundingBox.h"
 
 namespace tk { namespace dnn {
