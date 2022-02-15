@@ -4,8 +4,8 @@
 //#include <unistd.h>
 #include <mutex>
 
+#include "tkDNN/demo_utils.h"
 #include "tkDNN/CenternetDetection3D.h"
-#include "tkDNN/CenternetDetection3DTrack.h"
 
 bool gRun;
 bool SAVE_RESULT = false;
@@ -32,30 +32,33 @@ int main(int argc, char *argv[]) {
 
     if(argc > 2)
         input = argv[2]; 
-    char ntype = 'c';
+    std::string calib_params = "";
     if(argc > 3)
-        ntype = argv[3][0]; 
-    int n_classes = 3;
+        calib_params = argv[3]; 
+    char ntype = 'c';
     if(argc > 4)
-        n_classes = atoi(argv[4]); 
-    int n_batch = 1;
+        ntype = argv[4][0]; 
+    int n_classes = 3;
     if(argc > 5)
-        n_batch = atoi(argv[5]); 
-    bool show = true;
+        n_classes = atoi(argv[5]); 
+    int n_batch = 1;
     if(argc > 6)
-        show = atoi(argv[6]); 
-    float conf_thresh=0.3;
+        n_batch = atoi(argv[6]); 
+        
+    bool show = true;
     if(argc > 7)
-        conf_thresh = atof(argv[7]);     
+        show = atoi(argv[7]); 
+    float conf_thresh=0.3;
+    if(argc > 8)
+        conf_thresh = atof(argv[8]);     
 
     if(n_batch < 1 || n_batch > 64)
         FatalError("Batch dim not supported");
 
     if(!show)
-	SAVE_RESULT = true;
+	    SAVE_RESULT = true;
 
     tk::dnn::CenternetDetection3D cnet;
-    tk::dnn::CenternetDetection3DTrack ctrack;
 
     tk::dnn::DetectionNN3D *detNN;  
 
@@ -64,22 +67,18 @@ int main(int argc, char *argv[]) {
         case 'c':
             detNN = &cnet;
             break;
-        case 't':
-            detNN = &ctrack;
-            break;
         default:
         FatalError("Network type not allowed (3rd parameter)\n");
     }
     std::vector<cv::Mat> calibs;
-    // cv::Mat calib = cv::Mat::zeros(cv::Size(3,3), CV_32F);
-    // calib.at<float>(0,0) = 864.1243196486207;// * 512.0;//884.081444212;//864.1243196486207 * 512.0;// 633.0;
-    // calib.at<float>(0,2) = 726.7271690557819;// * 512.0;//0.0;//726.7271690557819 * 512.0;// 0.0; //w/2
-    // calib.at<float>(1,1) = 883.6552349216504;// * 512.0;//884.081444212;//883.6552349216504 * 512.0;// 633.0;
-    // calib.at<float>(1,2) = 506.8548506986564;// * 512.0;//0.0;//506.8548506986564 * 512.0;// 0.0; //h/2
-    // calibs.push_back(calib);
-    // calibs.push_back(calib);
-    // calibs.push_back(calib);
-    // calibs.push_back(calib);
+    if(!calib_params.empty() && calib_params!="NULL") {
+        std::cout<<"calib_params: "<<calib_params<<std::endl;
+        cv::Mat calib;
+        // the calibration matrix must be a 3x3 matrix
+        readCalibrationMatrix(calib_params, calib);
+        for(int bi=0; bi< n_batch; ++bi)
+            calibs.push_back(calib);
+    }
     detNN->init(net, n_classes, n_batch, conf_thresh, calibs);
 
     gRun = true;
@@ -96,8 +95,6 @@ int main(int argc, char *argv[]) {
         int h = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
         resultVideo.open("result.mp4", cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
     }
-    cv::Size sz_resize = cv::Size(512,512); 
-    std::vector<cv::Size> sz_orig;
     cv::Mat frame;
     if(show)
 	    cv::namedWindow("detection", cv::WINDOW_NORMAL);
@@ -108,15 +105,11 @@ int main(int argc, char *argv[]) {
     while(gRun) {
         batch_dnn_input.clear();
         batch_frame.clear();
-        sz_orig.clear();
         
         for(int bi=0; bi< n_batch; ++bi){
             cap >> frame; 
             if(!frame.data) 
                 break;
-            sz_orig.push_back(frame.size());
-            if(calibs.size() != 0)
-                resize(frame, frame, sz_resize);
             batch_frame.push_back(frame);
 
             // this will be resized to the net format
@@ -126,13 +119,11 @@ int main(int argc, char *argv[]) {
             break;  
  
         //inference
-        detNN->update(batch_dnn_input, n_batch, false, nullptr, false, sz_orig);
+        detNN->update(batch_dnn_input, n_batch, false, nullptr, false);
         detNN->draw(batch_frame);
 
         if(show){
             for(int bi=0; bi< n_batch; ++bi){
-                if(calibs.size() != 0)
-                    resize(batch_frame[bi], batch_frame[bi], sz_orig[bi]);
                 cv::imshow("detection", batch_frame[bi]);
                 cv::waitKey(1);
             }

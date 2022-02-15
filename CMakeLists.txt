@@ -10,9 +10,15 @@ set(CMAKE_CXX_STANDARD 11 CACHE STRING "The C++ standard to use")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+project (tkDNN)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+if(UNIX)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC -Wno-deprecated-declarations")
+endif()
 if(WIN32)
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "/O2 /FS /EHsc")
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_FLAGS "/O2 /FS /EHsc")
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif(WIN32)
 
 if(DEBUG)
@@ -128,14 +134,26 @@ target_link_libraries(test_resnet101_cnet ${PROJECT_NAME}::dnn)
 add_executable(test_dla34_cnet tests/centernet/dla34_cnet/dla34_cnet.cpp)
 target_link_libraries(test_dla34_cnet ${PROJECT_NAME}::dnn)
 
-add_executable(test_resnet101_cnet3d tests/centernet/resnet101_cnet3d/resnet101_cnet3d.cpp)
-target_link_libraries(test_resnet101_cnet3d ${PROJECT_NAME}::dnn)
-
 add_executable(test_dla34_cnet3d tests/centernet/dla34_cnet3d/dla34_cnet3d.cpp)
 target_link_libraries(test_dla34_cnet3d ${PROJECT_NAME}::dnn)
 
-add_executable(test_dla34_cnet3d_track tests/centernet/dla34_cnet3d_track/dla34_cnet3d_track.cpp)
-target_link_libraries(test_dla34_cnet3d_track ${PROJECT_NAME}::dnn)
+# CENTERTRACK
+
+add_executable(test_dla34_ctrack tests/centertrack/dla34_ctrack/dla34_ctrack.cpp)
+target_link_libraries(test_dla34_ctrack ${PROJECT_NAME}::dnn)
+
+# SHELFNET
+add_executable(test_shelfnet tests/shelfnet/shelfnet.cpp)
+target_link_libraries(test_shelfnet ${PROJECT_NAME}::dnn)
+
+add_executable(test_shelfnet_berkeley tests/shelfnet/shelfnet_berkeley.cpp)
+target_link_libraries(test_shelfnet_berkeley ${PROJECT_NAME}::dnn)
+
+add_executable(test_shelfnet_mapillary tests/shelfnet/shelfnet_mapillary.cpp)
+target_link_libraries(test_shelfnet_mapillary ${PROJECT_NAME}::dnn)
+
+add_executable(test_shelfnet_coco tests/shelfnet/shelfnet_coco.cpp)
+target_link_libraries(test_shelfnet_coco ${PROJECT_NAME}::dnn)
 
 #-------------------------------------------------------------------------------
 # Centernet
@@ -151,6 +169,12 @@ target_link_libraries(demo ${PROJECT_NAME}::dnn)
 
 add_executable(demo3D demo/demo/demo3D.cpp)
 target_link_libraries(demo3D ${PROJECT_NAME}::dnn)
+
+add_executable(demoTracker demo/demo/demoTracker.cpp)
+target_link_libraries(demoTracker ${PROJECT_NAME}::dnn)
+
+add_executable(seg_demo demo/demo/seg_demo.cpp)
+target_link_libraries(seg_demo ${PROJECT_NAME}::dnn)
 
 #-------------------------------------------------------------------------------
 # Install
