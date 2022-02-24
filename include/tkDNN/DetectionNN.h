@@ -156,6 +156,7 @@ class DetectionNN {
             int baseline = 0;
             float font_scale = 0.5;
             int thickness = 2;   
+            cv::Scalar color;
 
             for(int bi=0; bi<frames.size(); ++bi){
                 // draw dets
@@ -167,12 +168,14 @@ class DetectionNN {
                     y1   		= b.y + b.h;
                     det_class 	= classesNames[b.cl];
 
+                    color = cv::Scalar(colors[b.cl].val[0], colors[b.cl].val[1], colors[b.cl].val[2], 255);
+
                     // draw rectangle
-                    cv::rectangle(frames[bi], cv::Point(x0, y0), cv::Point(x1, y1), colors[b.cl], 2); 
+                    cv::rectangle(frames[bi], cv::Point(x0, y0), cv::Point(x1, y1), color, 2); 
 
                     // draw label
                     cv::Size text_size = getTextSize(det_class, cv::FONT_HERSHEY_SIMPLEX, font_scale, thickness, &baseline);
-                    cv::rectangle(frames[bi], cv::Point(x0, y0), cv::Point((x0 + text_size.width - 2), (y0 - text_size.height - 2)), colors[b.cl], -1);                      
+                    cv::rectangle(frames[bi], cv::Point(x0, y0), cv::Point((x0 + text_size.width - 2), (y0 - text_size.height - 2)), color, -1);                      
                     cv::putText(frames[bi], det_class, cv::Point(x0, (y0 - (baseline / 2))), cv::FONT_HERSHEY_SIMPLEX, font_scale, cv::Scalar(255, 255, 255), thickness);
                 }
             }
