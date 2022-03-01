@@ -18,9 +18,12 @@ bool Yolo3Detection::init(const std::string& tensor_path, const int n_classes, c
         FatalError("this is not yolo3");
     }
 
+    
+
     for(int i=0; i<netRT->pluginFactory->n_yolos; i++) {
         YoloRT *yRT = netRT->pluginFactory->yolos[i];
-        classes = std::min<int>(n_classes, yRT->classes);
+        classes = yRT->classes;
+        filter_classes = std::min<int>(n_classes, yRT->classes);
         num = yRT->num;
         nMasks = yRT->n_masks;
 
@@ -125,7 +128,7 @@ void Yolo3Detection::postprocess(const int bi, const bool mAP){
         y0 = y_ratio*y0;
         y1 = y_ratio*y1;
         
-        for(int c=0; c<classes; c++) {
+        for(int c=0; c<filter_classes; c++) {
             if(dets[j].prob[c] >= confThreshold) {
                 int obj_class = c;
                 float prob = dets[j].prob[c];
