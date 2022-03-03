@@ -15,8 +15,8 @@
 
 #include "Int8BatchStream.h"
 
-#include "tkdnn.h"
-#include "utils.h"
+#include "tkDNN/tkdnn.h"
+#include "tkDNN/utils.h"
 
 /*
  * Int8EntropyCalibrator implements the INT8 calibrator to achieve the

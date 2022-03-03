@@ -158,6 +158,9 @@ const char *output_bin = "resnet101/debug/fc.bin";
 int main()
 {
 
+    std::string bin_path  = "resnet101";
+    downloadWeightsifDoNotExist(input_bin, bin_path, "https://cloud.hipert.unimore.it/s/2MyPcWnEzGTm28A/download");
+
     // Network layout
     tk::dnn::dataDim_t dim(1, 3, 224, 224, 1);
     tk::dnn::Network net(dim);
@@ -273,6 +276,8 @@ int main()
             tk::dnn::Shortcut *s1_0                  = new tk::dnn::Shortcut(&net, last);
         }
         tk::dnn::Activation   *layer1_0_relu = new tk::dnn::Activation(&net, CUDNN_ACTIVATION_RELU);
+        if(i == 2)
+            layer1_0_relu->setFinal();
         last = layer1_0_relu;
     }
 
@@ -319,7 +324,7 @@ int main()
         TKDNN_TSTOP
         dim2.print();
     }
-    rt_out = (dnnType *)netRT.buffersRT[1];
+    rt_out = (dnnType *)netRT.buffersRT[2];
 
 
     printCenteredTitle(std::string(" RESNET CHECK RESULTS ").c_str(), '=', 30);

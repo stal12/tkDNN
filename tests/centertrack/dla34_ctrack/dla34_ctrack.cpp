@@ -1,9 +1,6 @@
 #include <iostream>
 #include "tkDNN/tkdnn.h"
 const char *input_bin = "dla34_ctrack/debug/input_base-level0-0.bin";
-// const char *input_bin = "dla34_ctrack/debug/input.bin";
-// const char *pre_img_bin = "dla34_ctrack/debug/pre_imgages.bin";
-// const char *pre_hm_bin = "dla34_ctrack/debug/pre_hms.bin";
 // //pre
 // const char *pre_img_conv1_bin = "dla34_ctrack/layers/base-pre_img_layer-0.bin";
 // const char *pre_hm_conv1_bin = "dla34_ctrack/layers/base-pre_hm_layer-0.bin";

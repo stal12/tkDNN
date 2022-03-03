@@ -13,7 +13,7 @@
 #include <thrust/device_ptr.h>
 
 
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 
 struct threshold : public thrust::binary_function<float,float,float>
 {

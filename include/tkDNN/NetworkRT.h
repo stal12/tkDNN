@@ -2,9 +2,9 @@
 #define NETWORKRT_H
 
 #include <string.h> // memcpy
-#include "utils.h"
-#include "Network.h"
-#include "Layer.h"
+#include "tkDNN/utils.h"
+#include "tkDNN/Network.h"
+#include "tkDNN/Layer.h"
 #include "NvInfer.h"
 #include <memory>
 

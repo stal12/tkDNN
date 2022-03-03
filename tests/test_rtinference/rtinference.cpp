@@ -1,6 +1,6 @@
 #include<iostream>
-#include<algorithm>
 #include "tkDNN/tkdnn.h"
+#include<algorithm>
 #include <stdlib.h>     /* srand, rand */
 
 
