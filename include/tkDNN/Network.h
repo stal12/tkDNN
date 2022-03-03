@@ -2,7 +2,7 @@
 #define NETWORK_H
 
 #include <string>
-#include "utils.h"
+#include "tkDNN/utils.h"
 
 namespace tk { namespace dnn {
 

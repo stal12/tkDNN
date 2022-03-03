@@ -6,19 +6,19 @@ project(tkDNN VERSION 1.0
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_STANDARD 11 CACHE STRING "The C++ standard to use")
+set(CMAKE_CXX_STANDARD 14 CACHE STRING "The C++ standard to use")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 project (tkDNN)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 if(UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC -Wno-deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC -Wno-deprecated-declarations")
 endif()
 if(WIN32)
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "/O2 /FS /EHsc")
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_FLAGS "/O2 /FS /EHsc")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif(WIN32)
 
 if(DEBUG)
@@ -40,7 +40,7 @@ find_package(yaml-cpp REQUIRED)
 #-------------------------------------------------------------------------------
 # CUDA DNN
 #-------------------------------------------------------------------------------
-set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--maxrregcount=32 -arch=sm_61")
+set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--maxrregcount=32")
 file(GLOB tkdnn_CUSRC "src/kernels/*.cu" "src/sorting.cu")
 add_library(dnnCUDA ${tkdnn_CUSRC})
 target_include_directories(dnnCUDA PUBLIC
@@ -134,6 +134,9 @@ target_link_libraries(test_resnet101_cnet ${PROJECT_NAME}::dnn)
 add_executable(test_dla34_cnet tests/centernet/dla34_cnet/dla34_cnet.cpp)
 target_link_libraries(test_dla34_cnet ${PROJECT_NAME}::dnn)
 
+add_executable(test_resnet101_cnet3d tests/centernet/resnet101_cnet3d/resnet101_cnet3d.cpp)
+target_link_libraries(test_resnet101_cnet3d ${PROJECT_NAME}::dnn)
+
 add_executable(test_dla34_cnet3d tests/centernet/dla34_cnet3d/dla34_cnet3d.cpp)
 target_link_libraries(test_dla34_cnet3d ${PROJECT_NAME}::dnn)
 
@@ -156,7 +159,7 @@ add_executable(test_shelfnet_coco tests/shelfnet/shelfnet_coco.cpp)
 target_link_libraries(test_shelfnet_coco ${PROJECT_NAME}::dnn)
 
 #-------------------------------------------------------------------------------
-# Centernet
+# Demos
 #-------------------------------------------------------------------------------
 add_executable(test_rtinference tests/test_rtinference/rtinference.cpp)
 target_link_libraries(test_rtinference ${PROJECT_NAME}::dnn)
@@ -175,6 +178,9 @@ target_link_libraries(demoTracker ${PROJECT_NAME}::dnn)
 
 add_executable(seg_demo demo/demo/seg_demo.cpp)
 target_link_libraries(seg_demo ${PROJECT_NAME}::dnn)
+
+add_executable(reID_demo demo/demo/reIDdemo.cpp)
+target_link_libraries(reID_demo ${PROJECT_NAME}::dnn)
 
 #-------------------------------------------------------------------------------
 # Install

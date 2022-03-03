@@ -4,8 +4,8 @@
 #include <opencv2/videoio.hpp>
 #include "opencv2/opencv.hpp"
 #include "kernels.h"
-#include "utils.h"
-#include "tkdnn.h"
+#include "tkDNN/utils.h"
+#include "tkDNN/tkdnn.h"
 #include <time.h>
 #include <vector>
 #include <numeric>      // std::iota

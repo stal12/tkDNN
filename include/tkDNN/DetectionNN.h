@@ -9,13 +9,13 @@
 #endif 
 
 #include <mutex>
-#include "utils.h"
+#include "tkDNN/utils.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 
 //#define OPENCV_CUDACONTRIB //if OPENCV has been compiled with CUDA and contrib.
 

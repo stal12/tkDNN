@@ -2,7 +2,7 @@
 #define BOUNDINGBOX_H
 
 #include <iostream>
-#include "tkdnn.h"
+#include "tkDNN/tkdnn.h"
 
 namespace tk { namespace dnn {
 class BoundingBox : public tk::dnn::box

@@ -1,7 +1,7 @@
 #ifndef KERNELS_H
 #define KERNELS_H
 
-#include "utils.h"
+#include "tkDNN/utils.h"
 
 void activationELUForward(dnnType *srcData, dnnType *dstData, int size, cudaStream_t stream = cudaStream_t(0));
 void activationLEAKYForward(dnnType *srcData, dnnType *dstData, int size, float slope, cudaStream_t stream = cudaStream_t(0));

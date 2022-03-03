@@ -3,7 +3,7 @@
 
 #include<iostream>
 #include<vector>
-#include "utils.h"
+#include "tkDNN/utils.h"
 #include "Network.h"
 
 namespace tk { namespace dnn {

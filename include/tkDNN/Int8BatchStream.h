@@ -19,8 +19,8 @@
 #include <mutex>
 
 #include "NvInfer.h"
-#include "utils.h"
-#include "tkdnn.h"
+#include "tkDNN/utils.h"
+#include "tkDNN/tkdnn.h"
 
 /*
  * BatchStream implements the stream for the INT8 calibrator. 

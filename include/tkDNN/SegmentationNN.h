@@ -6,16 +6,16 @@
 #include <stdlib.h>    
 #include <unistd.h>
 #include <mutex>
-#include "utils.h"
+#include "tkDNN/utils.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/hal/interface.h>
 
-#include "tkdnn.h"
-#include "NetworkViz.h"
-#include "kernelsThrust.h"
+#include "tkDNN/tkdnn.h"
+#include "tkDNN/NetworkViz.h"
+#include "tkDNN/kernelsThrust.h"
 
 namespace tk { namespace dnn {
 
