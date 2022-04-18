@@ -4,7 +4,7 @@
 #include "../kernels.h"
 #include <NvInfer.h>
 #include <vector>
-#include <utils.h>
+#include "../utils.h"
 
 namespace nvinfer1 {
     class RegionRT : public IPluginV2Ext {

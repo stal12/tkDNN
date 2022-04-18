@@ -5,7 +5,7 @@
 #include "../kernels.h"
 #include <NvInfer.h>
 #include <vector>
-#include <tkdnn.h>
+#include "../tkdnn.h"
 
 
 namespace nvinfer1 {

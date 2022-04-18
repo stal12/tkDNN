@@ -8,8 +8,8 @@
 #include<cassert>
 #include <NvInfer.h>
 #include <vector>
-#include <utils.h>
-#include <kernels.h>
+#include "../utils.h"
+#include "../kernels.h"
 
 namespace nvinfer1{
     class ConstantPaddingRT : public IPluginV2Ext {

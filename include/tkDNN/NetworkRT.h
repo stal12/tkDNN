@@ -7,24 +7,24 @@
 #include "Layer.h"
 #include "NvInfer.h"
 #include <memory>
-#include <tkDNN/kernels.h>
-#include <pluginsRT/ActivationLeakyRT.h>
-#include <pluginsRT/ActivationLogisticRT.h>
-#include <pluginsRT/ActivationMishRT.h>
-#include <pluginsRT/ActivationReLUCeilingRT.h>
-#include <pluginsRT/DeformableConvRT.h>
-#include <pluginsRT/FlattenConcatRT.h>
-#include <pluginsRT/MaxPoolingFixedSizeRT.h>
-#include <pluginsRT/RegionRT.h>
-#include <pluginsRT/ReorgRT.h>
-#include <pluginsRT/ReshapeRT.h>
-#include <pluginsRT/ResizeLayerRT.h>
-#include <pluginsRT/RouteRT.h>
-#include <pluginsRT/ShortcutRT.h>
-#include <pluginsRT/UpsampleRT.h>
-#include <pluginsRT/YoloRT.h>
-#include <pluginsRT/ConstantPaddingRT.h>
-#include <pluginsRT/ReflectionPadding.h>
+#include "kernels.h"
+#include "pluginsRT/ActivationLeakyRT.h"
+#include "pluginsRT/ActivationLogisticRT.h"
+#include "pluginsRT/ActivationMishRT.h"
+#include "pluginsRT/ActivationReLUCeilingRT.h"
+#include "pluginsRT/DeformableConvRT.h"
+#include "pluginsRT/FlattenConcatRT.h"
+#include "pluginsRT/MaxPoolingFixedSizeRT.h"
+#include "pluginsRT/RegionRT.h"
+#include "pluginsRT/ReorgRT.h"
+#include "pluginsRT/ReshapeRT.h"
+#include "pluginsRT/ResizeLayerRT.h"
+#include "pluginsRT/RouteRT.h"
+#include "pluginsRT/ShortcutRT.h"
+#include "pluginsRT/UpsampleRT.h"
+#include "pluginsRT/YoloRT.h"
+#include "pluginsRT/ConstantPaddingRT.h"
+#include "pluginsRT/ReflectionPadding.h"
 
 
 

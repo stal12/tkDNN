@@ -14,8 +14,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "tkDNN/utils.h"
-#include "tkDNN/tkdnn.h"
+#include "utils.h"
+#include "tkdnn.h"
 
 #include "NetworkViz.h"
 

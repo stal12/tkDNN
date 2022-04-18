@@ -4,7 +4,7 @@
 #include<cassert>
 #include <NvInfer.h>
 #include <vector>
-#include <utils.h>
+#include "../utils.h"
 namespace nvinfer1 {
     class FlattenConcatRT : public IPluginV2Ext {
 

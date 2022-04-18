@@ -1,5 +1,5 @@
 
-#include <tkdnn.h>
+#include "tkdnn.h"
 int testInference(std::vector<std::string> input_bins, std::vector<std::string> output_bins, 
     tk::dnn::Network *net, tk::dnn::NetworkRT *netRT = nullptr) {
 
