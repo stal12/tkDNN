@@ -247,12 +247,24 @@ target_link_libraries(demoDepth tkDNN)
 #         CACHE PATH "default install path" FORCE)
 #endif()
 message("install dir:" ${CMAKE_INSTALL_PREFIX})
-install(DIRECTORY include/ DESTINATION include/)
-install(TARGETS tkDNN  DESTINATION lib)
-install(TARGETS test_simple test_mnist test_mnistRT test_rtinference demo map_demo DESTINATION bin)
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" # source directory
-        DESTINATION "share/tkDNN/cmake/" # target directory
+
+# Install libraries with tkDNNTargets
+install(TARGETS tkDNN kernels
+	EXPORT tkDNNTargets
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+install(DIRECTORY include/ DESTINATION include/)
+#install(TARGETS tkDNN kernels DESTINATION lib)
+install(TARGETS test_simple test_mnist test_mnistRT test_rtinference demo map_demo DESTINATION bin)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindCUDNN.cmake" DESTINATION "share/tkDNN/cmake/")
+
+install(EXPORT tkDNNTargets NAMESPACE tkdnn:: DESTINATION "share/tkDNN/cmake")
+
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tests/" # source directory
         DESTINATION "share/tkDNN/tests" # target directory
 )
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tkDNNConfig.cmake.in ${CMAKE_BINARY_DIR}/cmake/tkDNNConfig.cmake @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/cmake/tkDNNConfig.cmake DESTINATION "share/tkDNN/cmake")
