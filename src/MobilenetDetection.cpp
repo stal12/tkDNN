@@ -126,7 +126,7 @@ float MobilenetDetection::iou(const tk::dnn::box &a, const tk::dnn::box &b){
     return iou;
 }
 
-bool MobilenetDetection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh){
+bool MobilenetDetection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names){
     std::cout<<(tensor_path).c_str()<<"\n";
     netRT = new tk::dnn::NetworkRT(NULL, (tensor_path).c_str());
     imageSize = netRT->input_dim.h;
@@ -174,38 +174,43 @@ bool MobilenetDetection::init(const std::string& tensor_path, const int n_classe
         colors[c] = cv::Scalar(int(255.0 * b), int(255.0 * g), int(255.0 * r));
     }
 
-    if(classes == 11){ //BDD
-        const char *classes_names_[] = {
-        "person","car","truck","bus","motor","bike","rider","traffic light","traffic sign","train"};
-        classesNames = std::vector<std::string>(classes_names_, std::end(classes_names_));
+    if(class_names.size() > 0) {
+        classesNames == class_names;
     }
-    else if(classes == 21){ //VOC
-        const char *classes_names_[] = {
-        "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
-        "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike",
-        "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
-        classesNames = std::vector<std::string>(classes_names_, std::end(classes_names_));
+    else {
+        if(classes == 11){ //BDD
+            const char *classes_names_[] = {
+            "person","car","truck","bus","motor","bike","rider","traffic light","traffic sign","train"};
+            classesNames = std::vector<std::string>(classes_names_, std::end(classes_names_));
+        }
+        else if(classes == 21){ //VOC
+            const char *classes_names_[] = {
+            "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
+            "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike",
+            "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
+            classesNames = std::vector<std::string>(classes_names_, std::end(classes_names_));
 
-    }
-    else if (classes == 81){ //COCO
-        const char *classes_names_[] = {
-        "person" , "bicycle" , "car" , "motorbike" , "aeroplane" , "bus" ,
-        "train" , "truck" , "boat" , "traffic light" , "fire hydrant" , "stop sign" , 
-        "parking meter" , "bench" , "bird" , "cat" , "dog" , "horse" , "sheep" , "cow" , 
-        "elephant" , "bear" , "zebra" , "giraffe" , "backpack" , "umbrella" , "handbag" , 
-        "tie" , "suitcase" , "frisbee" , "skis" , "snowboard" , "sports ball" , "kite" , 
-        "baseball bat" , "baseball glove" , "skateboard" , "surfboard" , "tennis racket" , 
-        "bottle" , "wine glass" , "cup" , "fork" , "knife" , "spoon" , "bowl" , "banana" , 
-        "apple" , "sandwich" , "orange" , "broccoli" , "carrot" , "hot dog" , "pizza" , 
-        "donut" , "cake" , "chair" , "sofa" , "pottedplant" , "bed" , "diningtable" , 
-    "toilet" , "tvmonitor" , "laptop" , "mouse" , "remote" , "keyboard" , 
-        "cell phone" , "microwave" , "oven" , "toaster" , "sink" , "refrigerator" , 
-        "book" , "clock" , "vase" , "scissors" , "teddy bear" , "hair drier" , "toothbrush"};
-        classesNames = std::vector<std::string>(classes_names_, std::end(classes_names_));
+        }
+        else if (classes == 81){ //COCO
+            const char *classes_names_[] = {
+            "person" , "bicycle" , "car" , "motorbike" , "aeroplane" , "bus" ,
+            "train" , "truck" , "boat" , "traffic light" , "fire hydrant" , "stop sign" , 
+            "parking meter" , "bench" , "bird" , "cat" , "dog" , "horse" , "sheep" , "cow" , 
+            "elephant" , "bear" , "zebra" , "giraffe" , "backpack" , "umbrella" , "handbag" , 
+            "tie" , "suitcase" , "frisbee" , "skis" , "snowboard" , "sports ball" , "kite" , 
+            "baseball bat" , "baseball glove" , "skateboard" , "surfboard" , "tennis racket" , 
+            "bottle" , "wine glass" , "cup" , "fork" , "knife" , "spoon" , "bowl" , "banana" , 
+            "apple" , "sandwich" , "orange" , "broccoli" , "carrot" , "hot dog" , "pizza" , 
+            "donut" , "cake" , "chair" , "sofa" , "pottedplant" , "bed" , "diningtable" , 
+        "toilet" , "tvmonitor" , "laptop" , "mouse" , "remote" , "keyboard" , 
+            "cell phone" , "microwave" , "oven" , "toaster" , "sink" , "refrigerator" , 
+            "book" , "clock" , "vase" , "scissors" , "teddy bear" , "hair drier" , "toothbrush"};
+            classesNames = std::vector<std::string>(classes_names_, std::end(classes_names_));
 
-    }
-    else{
-        FatalError("Number of classes not supported for mobilenet");
+        }
+        else{
+            FatalError("Number of classes not supported for mobilenet");
+        }
     }
     return true;
 }

@@ -3,7 +3,7 @@
 
 namespace tk { namespace dnn {
 
-    bool Yolo3Detection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh) {
+    bool Yolo3Detection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names) {
 
     //convert network to tensorRT
     std::cout<<(tensor_path).c_str()<<"\n";
