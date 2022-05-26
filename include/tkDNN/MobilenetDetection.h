@@ -53,7 +53,9 @@ private:
     int nPriors = 0;
     float *locations_h, *confidences_h;
 
-    
+#ifdef OPENCV_CUDACONTRIB
+    cv::cuda::GpuMat orig_img, frame_nomean;
+#endif
 
     void generate_ssd_priors(const SSDSpec *specs, const int n_specs, bool clamp = true);
     void convert_locatios_to_boxes_and_center();

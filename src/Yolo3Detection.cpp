@@ -58,7 +58,6 @@ namespace tk { namespace dnn {
 
 void Yolo3Detection::preprocess(cv::Mat &frame, const int bi){
 #ifdef OPENCV_CUDACONTRIB
-    cv::cuda::GpuMat orig_img, img_resized;
     orig_img = cv::cuda::GpuMat(frame);
     cv::cuda::resize(orig_img, img_resized, cv::Size(netRT->input_dim.w, netRT->input_dim.h));
 

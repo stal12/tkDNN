@@ -19,6 +19,10 @@ private:
     tk::dnn::Yolo* getYoloLayer(int n=0);
 
     cv::Mat bgr_h;
+
+#ifdef OPENCV_CUDACONTRIB
+    cv::cuda::GpuMat orig_img, img_resized;
+#endif
     
 public:
     Yolo3Detection() {};
