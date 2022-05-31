@@ -22,6 +22,7 @@
 #ifdef OPENCV_CUDACONTRIB
 #include <opencv2/cudawarping.hpp>
 #include <opencv2/cudaarithm.hpp>
+#include <opencv2/core/cuda.hpp>
 #endif
 
 
@@ -75,7 +76,7 @@ class DetectionNN3D {
         std::vector<double> pre_stats, stats, post_stats, visual_stats; /*keeps track of inference times (ms)*/
         std::vector<std::string> classesNames;
 
-        DetectionNN3D() {};
+        DetectionNN3D(){};
         ~DetectionNN3D(){};
 
         /**

@@ -16,6 +16,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "tkdnn.h"
+#include "ContiguousAllocator.h"
 
 //#define OPENCV_CUDACONTRIB //if OPENCV has been compiled with CUDA and contrib.
 
@@ -75,7 +76,13 @@ class DetectionNN {
         std::vector<double> stats; /*keeps track of inference times (ms)*/
         std::vector<std::string> classesNames;
 
-        DetectionNN() {};
+        DetectionNN()
+#ifdef OPENCV_CUDACONTRIB
+        :
+        bgr({cv::cuda::GpuMat(contiguousAllocator()), cv::cuda::GpuMat(contiguousAllocator()), cv::cuda::GpuMat(contiguousAllocator())}),
+        imagePreproc(contiguousAllocator())
+#endif
+        {};
         ~DetectionNN(){};
 
         /**

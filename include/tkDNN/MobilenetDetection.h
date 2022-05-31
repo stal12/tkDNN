@@ -64,7 +64,13 @@ private:
     
 
 public:
-    MobilenetDetection() {};
+    MobilenetDetection()
+#ifdef OPENCV_CUDACONTRIB    
+    :
+    orig_img(contiguousAllocator()),
+    frame_nomean(contiguousAllocator())
+#endif
+    {};
     ~MobilenetDetection() {}; 
 
     bool init(const std::string& tensor_path,const int n_classes, const int n_batches=1, const float conf_thresh=0.3, const std::vector<std::string>& class_names = {});

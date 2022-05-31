@@ -25,7 +25,13 @@ private:
 #endif
     
 public:
-    Yolo3Detection() {};
+    Yolo3Detection()
+#ifdef OPENCV_CUDACONTRIB    
+    :
+    orig_img(contiguousAllocator()),
+    img_resized(contiguousAllocator())
+#endif    
+    {};
     ~Yolo3Detection() {}; 
 
     bool init(const std::string& tensor_path, const int n_classes=80, const int n_batches=1, const float conf_thresh=0.3, const std::vector<std::string>& class_names = {});
