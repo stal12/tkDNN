@@ -67,12 +67,18 @@ void Yolo3Detection::preprocess(cv::Mat &frame, const int bi){
     cv::cuda::split(imagePreproc,bgr);//split source
 
     //write channels
-    for(int i=0; i<netRT->input_dim.c; i++) {
+    /* for(int i=0; i<netRT->input_dim.c; i++) {
         int size = imagePreproc.rows * imagePreproc.cols;
         int ch = netRT->input_dim.c-1 -i;
         bgr[ch].download(bgr_h); //TODO: don't copy back on CPU
         checkCuda( cudaMemcpy(input_d + i*size + netRT->input_dim.tot()*bi, (float*)bgr_h.data, size*sizeof(dnnType), cudaMemcpyHostToDevice));
     }
+    */
+    for(int i=0; i < netRT->input_dim.c; i++){
+        int idx = i * imagePreproc.rows * imagePreproc.cols;
+        checkCuda( cudaMemcpy(input_d + idx + netRT->input_dim.tot()*bi, bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType), cudaMemcpyDeviceToDevice) );
+    }
+
 #else
     cv::resize(frame, frame, cv::Size(netRT->input_dim.w, netRT->input_dim.h));
     frame.convertTo(imagePreproc, CV_32FC3, 1/255.0); 
