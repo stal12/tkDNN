@@ -31,7 +31,7 @@ namespace tk { namespace dnn {
 
 std::map<Layer*, nvinfer1::ITensor*>tensors;
 
-NetworkRT::NetworkRT(Network *net, const char *name) {
+NetworkRT::NetworkRT(Network *net, const char *name, bool useGraph_) : useGraph(useGraph_) {
 
     float rt_ver = float(NV_TENSORRT_MAJOR) +
                    float(NV_TENSORRT_MINOR)/10 +
@@ -230,7 +230,23 @@ dnnType* NetworkRT::infer(dataDim_t &dim, dnnType* data) {
     }
 
     checkCuda(cudaMemcpyAsync(buffersRT[buf_input_idx], data, batches*input_dim.tot()*sizeof(dnnType), cudaMemcpyDeviceToDevice, stream));
-    contextRT->enqueue(batches, buffersRT, stream, nullptr);
+    
+    if (useGraph) {
+        if (!graphExists) {
+            checkCuda(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));    
+            contextRT->enqueue(batches, buffersRT, stream, nullptr);
+            checkCuda(cudaStreamEndCapture(stream, &graph));
+            cudaGraphNode_t errorNode;
+            char logBuffer[512];
+            checkCuda(cudaGraphInstantiate(&instance, graph, &errorNode, logBuffer, 512));        
+            graphExists = true;
+        }
+        checkCuda(cudaGraphLaunch(instance, stream));
+    }
+    else {
+        contextRT->enqueue(batches, buffersRT, stream, nullptr);
+    } 
+    
     checkCuda(cudaMemcpyAsync(output, buffersRT[buf_output_idx], batches*output_dim.tot()*sizeof(dnnType), cudaMemcpyDeviceToDevice, stream));
     checkCuda(cudaStreamSynchronize(stream));
 

@@ -126,9 +126,9 @@ float MobilenetDetection::iou(const tk::dnn::box &a, const tk::dnn::box &b){
     return iou;
 }
 
-bool MobilenetDetection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names){
+bool MobilenetDetection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names, bool cuda_graph){
     std::cout<<(tensor_path).c_str()<<"\n";
-    netRT = new tk::dnn::NetworkRT(NULL, (tensor_path).c_str());
+    netRT = new tk::dnn::NetworkRT(NULL, (tensor_path).c_str(), cuda_graph);
     imageSize = netRT->input_dim.h;
     classes = n_classes;
     nBatches = n_batches;

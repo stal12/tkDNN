@@ -94,7 +94,8 @@ class DetectionNN {
          * @param n_batches maximum number of batches to use in inference
          * @return true if everything is correct, false otherwise.
          */
-        virtual bool init(const std::string& tensor_path, const int n_classes=80, const int n_batches=1, const float conf_thresh=0.3, const std::vector<std::string>& class_names = {}) = 0;
+        virtual bool init(const std::string& tensor_path, const int n_classes=80, const int n_batches=1, const float conf_thresh=0.3, const std::vector<std::string>& class_names = {},
+        bool cuda_graph = false) = 0;
         
         /**
          * This method performs the whole detection of the NN.

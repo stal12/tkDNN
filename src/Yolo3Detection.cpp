@@ -3,11 +3,11 @@
 
 namespace tk { namespace dnn {
 
-    bool Yolo3Detection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names) {
+    bool Yolo3Detection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names, bool cuda_graph) {
 
     //convert network to tensorRT
     std::cout<<(tensor_path).c_str()<<"\n";
-    netRT = new tk::dnn::NetworkRT(nullptr, (tensor_path).c_str() );
+    netRT = new tk::dnn::NetworkRT(nullptr, (tensor_path).c_str(), cuda_graph);
 
     nBatches = n_batches;
     confThreshold = conf_thresh;

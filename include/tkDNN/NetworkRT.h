@@ -52,10 +52,14 @@ public:
     dataDim_t input_dim, output_dim;
     dnnType *output;
     cudaStream_t stream;
+    bool useGraph;
+    cudaGraph_t graph;
+    cudaGraphExec_t instance;
+    bool graphExists = false;
 
     std::vector<nvinfer1::YoloRT*> yolo_plugins; // yolo layers in network
 
-    NetworkRT(Network *net, const char *name);
+    NetworkRT(Network *net, const char *name, bool useGraph_ = false);
     virtual ~NetworkRT();
 
     int getMaxBatchSize() {
