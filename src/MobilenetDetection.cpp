@@ -217,11 +217,13 @@ bool MobilenetDetection::init(const std::string& tensor_path, const int n_classe
 
 void MobilenetDetection::preprocess(cv::Mat &frame, const int bi){
 #ifdef OPENCV_CUDACONTRIB
-        //move original image on GPU
-        orig_img.upload(frame);
+
+        void *pDevice;
+        checkCuda(cudaHostGetDevicePointer(&pDevice, frame.data, 0));
+        cv::cuda::GpuMat input_img(frame.rows, frame.cols, frame.type(), pDevice);
 
         //resize image, remove mean, divide by std
-        cv::cuda::resize (orig_img, orig_img, cv::Size(netRT->input_dim.w, netRT->input_dim.h)); 
+        cv::cuda::resize (input_img, orig_img, cv::Size(netRT->input_dim.w, netRT->input_dim.h)); 
         orig_img.convertTo(frame_nomean, CV_32FC3, 1, -127);
         frame_nomean.convertTo(imagePreproc, CV_32FC3, 1 / 128.0, 0);
 

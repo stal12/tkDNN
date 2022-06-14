@@ -231,7 +231,7 @@ dnnType* NetworkRT::infer(dataDim_t &dim, dnnType* data) {
 
     checkCuda(cudaMemcpyAsync(buffersRT[buf_input_idx], data, batches*input_dim.tot()*sizeof(dnnType), cudaMemcpyDeviceToDevice, stream));
     
-    if (useGraph) {
+    if (useGraph && !firstIteration) {
         if (!graphExists) {
             checkCuda(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));    
             contextRT->enqueue(batches, buffersRT, stream, nullptr);
@@ -252,6 +252,8 @@ dnnType* NetworkRT::infer(dataDim_t &dim, dnnType* data) {
 
     dim = output_dim;
     dim.n = batches;
+
+    firstIteration = false;
 
     return output;
 }

@@ -56,6 +56,7 @@ public:
     cudaGraph_t graph;
     cudaGraphExec_t instance;
     bool graphExists = false;
+    bool firstIteration = true;
 
     std::vector<nvinfer1::YoloRT*> yolo_plugins; // yolo layers in network
 
