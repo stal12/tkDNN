@@ -74,7 +74,7 @@ public:
     ~CenternetDetection() {}; 
 
     bool init(const std::string& tensor_path, const int n_classes=80, const int n_batches=1, const float conf_thresh=0.3, const std::vector<std::string>& class_names = {}, bool cuda_graph = false) override;
-    void preprocess(cv::Mat &frame, const int bi=0) override;
+    void preprocess(cv::Mat &frame, const int bi=0, cv::cuda::Stream& stream=cv::cuda::Stream::Null()) override;
     void postprocess(const int bi=0,const bool mAP=false) override;
 };
 

@@ -124,7 +124,7 @@ bool CenternetDetection::init(const std::string& tensor_path, const int n_classe
 }
 
 
-void CenternetDetection::preprocess(cv::Mat &frame, const int bi){
+void CenternetDetection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stream& stream){
      // -----------------------------------pre-process ------------------------------------------
     
     // auto start_t = std::chrono::steady_clock::now();

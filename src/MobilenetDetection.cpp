@@ -162,6 +162,8 @@ bool MobilenetDetection::init(const std::string& tensor_path, const int n_classe
     checkCuda(cudaMallocHost(&input, sizeof(dnnType) * netRT->input_dim.tot() * nBatches));
 #endif
     checkCuda(cudaMalloc(&input_d, sizeof(dnnType) * netRT->input_dim.tot() * nBatches));
+    checkCuda(cudaMalloc(&input_d_buffer, sizeof(dnnType) * netRT->input_dim.tot() * nBatches));
+
 
     locations_h = (float *)malloc(N_COORDS * nPriors * sizeof(float));
     confidences_h = (float *)malloc(nPriors * classes * sizeof(float));
@@ -215,7 +217,7 @@ bool MobilenetDetection::init(const std::string& tensor_path, const int n_classe
     return true;
 }
 
-void MobilenetDetection::preprocess(cv::Mat &frame, const int bi){
+void MobilenetDetection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stream& stream){
 #ifdef OPENCV_CUDACONTRIB
 
         void *pDevice;
@@ -223,16 +225,20 @@ void MobilenetDetection::preprocess(cv::Mat &frame, const int bi){
         cv::cuda::GpuMat input_img(frame.rows, frame.cols, frame.type(), pDevice);
 
         //resize image, remove mean, divide by std
-        cv::cuda::resize (input_img, orig_img, cv::Size(netRT->input_dim.w, netRT->input_dim.h)); 
-        orig_img.convertTo(frame_nomean, CV_32FC3, 1, -127);
-        frame_nomean.convertTo(imagePreproc, CV_32FC3, 1 / 128.0, 0);
+        cv::cuda::resize (input_img, orig_img, cv::Size(netRT->input_dim.w, netRT->input_dim.h), 0.0, 0.0, 1, stream); 
+        orig_img.convertTo(frame_nomean, CV_32FC3, 1, -127, stream);
+        frame_nomean.convertTo(imagePreproc, CV_32FC3, 1 / 128.0, 0, stream);
 
         //copy image into tensors
-        cv::cuda::split(imagePreproc, bgr);
+        cv::cuda::split(imagePreproc, bgr, stream);
 
         for(int i=0; i < netRT->input_dim.c; i++){
             int idx = i * imagePreproc.rows * imagePreproc.cols;
-            checkCuda( cudaMemcpy((void *)&input_d[idx + netRT->input_dim.tot()*bi], (void *)bgr[i].data, imagePreproc.rows * imagePreproc.cols* sizeof(float), cudaMemcpyDeviceToDevice) );
+            checkCuda( cudaMemcpyAsync((void *)&input_d_buffer[idx + netRT->input_dim.tot()*bi],
+                        (void *)bgr[i].data,
+                        imagePreproc.rows * imagePreproc.cols* sizeof(float),
+                        cudaMemcpyDeviceToDevice,
+                        cv::cuda::StreamAccessor::getStream(stream)) );
         }
 #else
         //resize image, remove mean, divide by std

@@ -42,6 +42,7 @@ namespace tk { namespace dnn {
     checkCuda(cudaMallocHost(&input, sizeof(dnnType)*idim.tot()));
 #endif
     checkCuda(cudaMalloc(&input_d, sizeof(dnnType)*idim.tot()));
+    checkCuda(cudaMalloc(&input_d_buffer, sizeof(dnnType)*idim.tot()));
 
     // class colors precompute    
     for(int c=0; c<classes; c++) {
@@ -56,17 +57,19 @@ namespace tk { namespace dnn {
     return true;
 } 
 
-void Yolo3Detection::preprocess(cv::Mat &frame, const int bi){
+void Yolo3Detection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stream& stream){
 #ifdef OPENCV_CUDACONTRIB
+    
     void *pDevice;
     checkCuda(cudaHostGetDevicePointer(&pDevice, frame.data, 0));
     cv::cuda::GpuMat input_img(frame.rows, frame.cols, frame.type(), pDevice);
-        
-    cv::cuda::resize(input_img, img_resized, cv::Size(netRT->input_dim.w, netRT->input_dim.h));
-    img_resized.convertTo(imagePreproc, CV_32FC3, 1/255.0); 
+    
+    cv::cuda::resize(input_img, img_resized, cv::Size(netRT->input_dim.w, netRT->input_dim.h), 0.0, 0.0, 1, stream);
+    
+    img_resized.convertTo(imagePreproc, CV_32FC3, 1/255.0, stream); 
 
     //split channels
-    cv::cuda::split(imagePreproc,bgr);//split source
+    cv::cuda::split(imagePreproc,bgr, stream);//split source
 
     //write channels
     /* for(int i=0; i<netRT->input_dim.c; i++) {
@@ -78,7 +81,11 @@ void Yolo3Detection::preprocess(cv::Mat &frame, const int bi){
     */
     for(int i=0; i < netRT->input_dim.c; i++){
         int idx = i * imagePreproc.rows * imagePreproc.cols;
-        checkCuda( cudaMemcpy(input_d + idx + netRT->input_dim.tot()*bi, bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType), cudaMemcpyDeviceToDevice) );
+        checkCuda(cudaMemcpyAsync(input_d_buffer + idx + netRT->input_dim.tot()*bi, 
+                                    bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType), 
+                                    cudaMemcpyDeviceToDevice, 
+                                    cv::cuda::StreamAccessor::getStream(stream)));
+        //checkCuda(cudaMemcpy(input_d_buffer + idx + netRT->input_dim.tot()*bi, bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType), cudaMemcpyDeviceToDevice) );
     }
 
 #else
@@ -99,8 +106,6 @@ void Yolo3Detection::preprocess(cv::Mat &frame, const int bi){
 }
 
 void Yolo3Detection::postprocess(const int bi, const bool mAP){
-
-
 
     //get yolo outputs
     if(netRT->yolo_plugins.size() < 2){

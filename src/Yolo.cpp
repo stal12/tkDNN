@@ -49,10 +49,14 @@ Yolo::Yolo(Network *net, int classes, int num, std::string fname_weights, int n_
 
     checkCuda( cudaMalloc(&dstData, output_dim.tot()*sizeof(dnnType)) );
     predictions = nullptr;
+    //Change this to use pinned memory!
+    //checkCuda(cudaHostAlloc(&predictions, output_dim.tot()*sizeof(dnnType), cudaHostAllocPortable | cudaHostAllocMapped));
+    //checkCuda(cudaHostGetDevicePointer(&dstData, predictions, 0));
 }
 
 Yolo::~Yolo() {
     checkCuda( cudaFree(dstData) );
+    //checkCuda(cudaFreeHost(predictions));
 }
 
 int entry_index(int batch, int location, int entry, 
@@ -138,6 +142,7 @@ int Yolo::computeDetections(Yolo::detection *dets, int &ndets, int netw, int net
     if(predictions == nullptr)
         predictions = new dnnType[output_dim.tot()];
     checkCuda( cudaMemcpy(predictions, dstData, output_dim.tot()*sizeof(dnnType), cudaMemcpyDeviceToHost));
+    //checkCuda(cudaDeviceSynchronize());
 
     int lw = output_dim.w;
     int lh = output_dim.h;

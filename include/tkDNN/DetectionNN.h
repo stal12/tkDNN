@@ -23,6 +23,7 @@
 #ifdef OPENCV_CUDACONTRIB
 #include <opencv2/cudawarping.hpp>
 #include <opencv2/cudaarithm.hpp>
+#include <opencv2/core/cuda_stream_accessor.hpp>
 #endif
 
 
@@ -33,6 +34,7 @@ class DetectionNN {
     protected:
         tk::dnn::NetworkRT *netRT = nullptr;
         dnnType *input_d;
+        dnnType *input_d_buffer;
 
         std::vector<cv::Size> originalSize;
 
@@ -55,7 +57,7 @@ class DetectionNN {
          * @param frame original frame to adapt for inference.
          * @param bi batch index
          */
-        virtual void preprocess(cv::Mat &frame, const int bi=0) = 0;
+        virtual void preprocess(cv::Mat &frame, const int bi=0, cv::cuda::Stream& stream=cv::cuda::Stream::Null()) = 0;
 
         /**
          * This method postprocess the output of the NN to obtain the correct 
@@ -150,6 +152,27 @@ class DetectionNN {
                 if(save_times) *times<<t_ns<<"\n";
             }
         }      
+
+        void preinference(std::vector<cv::Mat>& frames, cv::cuda::Stream& stream=cv::cuda::Stream::Null()) {
+            originalSize.resize(1);
+            originalSize[0] = (frames[0].size());
+            preprocess(frames[0], 0, stream);
+        }
+
+        void inference() {
+            tk::dnn::dataDim_t dim = netRT->input_dim;
+            dim.n = 1;
+            netRT->infer(dim, input_d);
+        }
+
+        void postinference() {
+            batchDetected.clear();
+            postprocess(0, false);
+        }
+
+        void swapBuffers() {
+            std::swap(input_d, input_d_buffer);
+        }
 
         /**
          * Method to draw bounding boxes and labels on a frame.
