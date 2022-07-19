@@ -3,7 +3,13 @@
 
 namespace tk { namespace dnn {
 
-    bool Yolo3Detection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names, bool cuda_graph) {
+bool Yolo3Detection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, 
+                            const std::vector<std::string>& class_names, bool cuda_graph, bool gpu_preprocess) {
+
+    gpuPreprocess = gpu_preprocess;
+#if !defined OPENCV_CUDACONTRIB
+    gpuPreprocess = false;
+#endif
 
     //convert network to tensorRT
     std::cout<<(tensor_path).c_str()<<"\n";
@@ -38,9 +44,10 @@ namespace tk { namespace dnn {
     }
 
     dets = tk::dnn::Yolo::allocateDetections(tk::dnn::Yolo::MAX_DETECTIONS, classes);
-#ifndef OPENCV_CUDACONTRIB
-    checkCuda(cudaMallocHost(&input, sizeof(dnnType)*idim.tot()));
-#endif
+
+    if (!gpuPreprocess) {
+        checkCuda(cudaMallocHost(&input, sizeof(dnnType)*idim.tot()));
+    }
     checkCuda(cudaMalloc(&input_d, sizeof(dnnType)*idim.tot()));
     checkCuda(cudaMalloc(&input_d_buffer, sizeof(dnnType)*idim.tot()));
 
@@ -60,37 +67,41 @@ namespace tk { namespace dnn {
 void Yolo3Detection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stream& stream){
 #ifdef OPENCV_CUDACONTRIB
     
-    void *pDevice;
-    checkCuda(cudaHostGetDevicePointer(&pDevice, frame.data, 0));
-    cv::cuda::GpuMat input_img(frame.rows, frame.cols, frame.type(), pDevice);
-    
-    cv::cuda::resize(input_img, img_resized, cv::Size(netRT->input_dim.w, netRT->input_dim.h), 0.0, 0.0, 1, stream);
-    
-    img_resized.convertTo(imagePreproc, CV_32FC3, 1/255.0, stream); 
+    if (gpuPreprocess) {
+        void *pDevice;
+        checkCuda(cudaHostGetDevicePointer(&pDevice, frame.data, 0));
+        cv::cuda::GpuMat input_img(frame.rows, frame.cols, frame.type(), pDevice);
+        
+        cv::cuda::resize(input_img, img_resized_gpu, cv::Size(netRT->input_dim.w, netRT->input_dim.h), 0.0, 0.0, 1, stream);
+        
+        img_resized_gpu.convertTo(imagePreprocGpu, CV_32FC3, 1/255.0, stream); 
 
-    //split channels
-    cv::cuda::split(imagePreproc,bgr, stream);//split source
+        //split channels
+        cv::cuda::split(imagePreprocGpu, bgrGpu, stream);//split source
 
-    //write channels
-    /* for(int i=0; i<netRT->input_dim.c; i++) {
-        int size = imagePreproc.rows * imagePreproc.cols;
-        int ch = netRT->input_dim.c-1 -i;
-        bgr[ch].download(bgr_h); //TODO: don't copy back on CPU
-        checkCuda( cudaMemcpy(input_d + i*size + netRT->input_dim.tot()*bi, (float*)bgr_h.data, size*sizeof(dnnType), cudaMemcpyHostToDevice));
+        //write channels
+        /* for(int i=0; i<netRT->input_dim.c; i++) {
+            int size = imagePreproc.rows * imagePreproc.cols;
+            int ch = netRT->input_dim.c-1 -i;
+            bgr[ch].download(bgr_h); //TODO: don't copy back on CPU
+            checkCuda( cudaMemcpy(input_d + i*size + netRT->input_dim.tot()*bi, (float*)bgr_h.data, size*sizeof(dnnType), cudaMemcpyHostToDevice));
+        }
+        */
+        for(int i=0; i < netRT->input_dim.c; i++) {
+            int idx = i * imagePreprocGpu.rows * imagePreprocGpu.cols;
+            checkCuda(cudaMemcpyAsync(input_d_buffer + idx + netRT->input_dim.tot()*bi, 
+                                        bgrGpu[i].data, imagePreprocGpu.rows * imagePreprocGpu.cols * sizeof(dnnType), 
+                                        cudaMemcpyDeviceToDevice, 
+                                        cv::cuda::StreamAccessor::getStream(stream)));
+            //checkCuda(cudaMemcpy(input_d_buffer + idx + netRT->input_dim.tot()*bi, bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType), cudaMemcpyDeviceToDevice) );
+        }
+        return;
     }
-    */
-    for(int i=0; i < netRT->input_dim.c; i++){
-        int idx = i * imagePreproc.rows * imagePreproc.cols;
-        checkCuda(cudaMemcpyAsync(input_d_buffer + idx + netRT->input_dim.tot()*bi, 
-                                    bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType), 
-                                    cudaMemcpyDeviceToDevice, 
-                                    cv::cuda::StreamAccessor::getStream(stream)));
-        //checkCuda(cudaMemcpy(input_d_buffer + idx + netRT->input_dim.tot()*bi, bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType), cudaMemcpyDeviceToDevice) );
-    }
 
-#else
-    cv::resize(frame, frame, cv::Size(netRT->input_dim.w, netRT->input_dim.h));
-    frame.convertTo(imagePreproc, CV_32FC3, 1/255.0); 
+#endif
+
+    cv::resize(frame, img_resized, cv::Size(netRT->input_dim.w, netRT->input_dim.h));
+    img_resized.convertTo(imagePreproc, CV_32FC3, 1/255.0); 
 
     //split channels
     cv::split(imagePreproc,bgr);//split source
@@ -101,8 +112,12 @@ void Yolo3Detection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stream& 
         int ch = netRT->input_dim.c-1 -i;
         memcpy((void*)&input[idx + netRT->input_dim.tot()*bi], (void*)bgr[ch].data, imagePreproc.rows*imagePreproc.cols*sizeof(dnnType));     
     }
-    checkCuda(cudaMemcpyAsync(input_d + netRT->input_dim.tot()*bi, input + netRT->input_dim.tot()*bi, netRT->input_dim.tot()*sizeof(dnnType), cudaMemcpyHostToDevice, netRT->stream));
-#endif
+    checkCuda(cudaMemcpyAsync(input_d_buffer + netRT->input_dim.tot()*bi, 
+                                input + netRT->input_dim.tot()*bi, 
+                                netRT->input_dim.tot()*sizeof(dnnType), 
+                                cudaMemcpyHostToDevice,
+                                cv::cuda::StreamAccessor::getStream(stream)));
+
 }
 
 void Yolo3Detection::postprocess(const int bi, const bool mAP){

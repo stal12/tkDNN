@@ -21,20 +21,22 @@ private:
     cv::Mat bgr_h;
 
 #ifdef OPENCV_CUDACONTRIB
-    cv::cuda::GpuMat orig_img, img_resized;
+    cv::cuda::GpuMat orig_img_gpu, img_resized_gpu;
 #endif
+    cv::Mat img_resized;
     
 public:
     Yolo3Detection()
 #ifdef OPENCV_CUDACONTRIB    
     :
-    orig_img(contiguousAllocator()),
-    img_resized(contiguousAllocator())
+    orig_img_gpu(contiguousAllocator()),
+    img_resized_gpu(contiguousAllocator())
 #endif    
     {};
     ~Yolo3Detection() {}; 
 
-    bool init(const std::string& tensor_path, const int n_classes=80, const int n_batches=1, const float conf_thresh=0.3, const std::vector<std::string>& class_names = {}, bool cuda_graph = false) override;
+    bool init(const std::string& tensor_path, const int n_classes=80, const int n_batches=1, const float conf_thresh=0.3, 
+                const std::vector<std::string>& class_names = {}, bool cuda_graph = false, bool gpu_preprocess = true) override;
     void preprocess(cv::Mat &frame, const int bi=0, cv::cuda::Stream& stream=cv::cuda::Stream::Null()) override;
     void postprocess(const int bi=0,const bool mAP=false) override;
 };

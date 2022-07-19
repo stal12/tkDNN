@@ -3,7 +3,12 @@
 
 namespace tk { namespace dnn {
 
-bool CenternetDetection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names, bool cuda_graph){
+bool CenternetDetection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, 
+                                const std::vector<std::string>& class_names, bool cuda_graph, bool gpu_preprocess) {
+    gpuPreprocess = gpu_preprocess;
+#if !defined OPENCV_CUDACONTRIB
+    gpuPreprocess = false;
+#endif
     std::cout<<(tensor_path).c_str()<<"\n";
     netRT = new tk::dnn::NetworkRT(NULL, (tensor_path).c_str(), cuda_graph);
     classes = n_classes;

@@ -41,15 +41,15 @@ class DetectionNN {
         cv::Scalar colors[256];
 
         int nBatches = 1;
+        bool gpuPreprocess;
 
 #ifdef OPENCV_CUDACONTRIB
-        cv::cuda::GpuMat bgr[3];
-        cv::cuda::GpuMat imagePreproc;
-#else
+        cv::cuda::GpuMat bgrGpu[3];
+        cv::cuda::GpuMat imagePreprocGpu;
+#endif
         cv::Mat bgr[3];
         cv::Mat imagePreproc;
         dnnType *input;
-#endif
 
         /**
          * This method preprocess the image, before feeding it to the NN.
@@ -81,8 +81,8 @@ class DetectionNN {
         DetectionNN()
 #ifdef OPENCV_CUDACONTRIB
         :
-        bgr({cv::cuda::GpuMat(contiguousAllocator()), cv::cuda::GpuMat(contiguousAllocator()), cv::cuda::GpuMat(contiguousAllocator())}),
-        imagePreproc(contiguousAllocator())
+        bgrGpu({cv::cuda::GpuMat(contiguousAllocator()), cv::cuda::GpuMat(contiguousAllocator()), cv::cuda::GpuMat(contiguousAllocator())}),
+        imagePreprocGpu(contiguousAllocator())
 #endif
         {};
         ~DetectionNN(){};
@@ -97,7 +97,7 @@ class DetectionNN {
          * @return true if everything is correct, false otherwise.
          */
         virtual bool init(const std::string& tensor_path, const int n_classes=80, const int n_batches=1, const float conf_thresh=0.3, const std::vector<std::string>& class_names = {},
-        bool cuda_graph = false) = 0;
+        bool cuda_graph = false, bool gpu_preprocess = true) = 0;
         
         /**
          * This method performs the whole detection of the NN.

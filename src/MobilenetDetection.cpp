@@ -126,7 +126,12 @@ float MobilenetDetection::iou(const tk::dnn::box &a, const tk::dnn::box &b){
     return iou;
 }
 
-bool MobilenetDetection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, const std::vector<std::string>& class_names, bool cuda_graph){
+bool MobilenetDetection::init(const std::string& tensor_path, const int n_classes, const int n_batches, const float conf_thresh, 
+                                const std::vector<std::string>& class_names, bool cuda_graph, bool gpu_preprocess){
+    gpuPreprocess = gpu_preprocess;
+#if !defined OPENCV_CUDACONTRIB
+    gpuPreprocess = false;
+#endif
     std::cout<<(tensor_path).c_str()<<"\n";
     netRT = new tk::dnn::NetworkRT(NULL, (tensor_path).c_str(), cuda_graph);
     imageSize = netRT->input_dim.h;
@@ -158,9 +163,9 @@ bool MobilenetDetection::init(const std::string& tensor_path, const int n_classe
 
     generate_ssd_priors(specs, N_SSDSPEC);
 
-#ifndef OPENCV_CUDACONTRIB
-    checkCuda(cudaMallocHost(&input, sizeof(dnnType) * netRT->input_dim.tot() * nBatches));
-#endif
+    if (!gpuPreprocess) {
+        checkCuda(cudaMallocHost(&input, sizeof(dnnType) * netRT->input_dim.tot() * nBatches));
+    }
     checkCuda(cudaMalloc(&input_d, sizeof(dnnType) * netRT->input_dim.tot() * nBatches));
     checkCuda(cudaMalloc(&input_d_buffer, sizeof(dnnType) * netRT->input_dim.tot() * nBatches));
 
@@ -220,41 +225,56 @@ bool MobilenetDetection::init(const std::string& tensor_path, const int n_classe
 void MobilenetDetection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stream& stream){
 #ifdef OPENCV_CUDACONTRIB
 
+    if (gpuPreprocess) {
         void *pDevice;
         checkCuda(cudaHostGetDevicePointer(&pDevice, frame.data, 0));
         cv::cuda::GpuMat input_img(frame.rows, frame.cols, frame.type(), pDevice);
 
         //resize image, remove mean, divide by std
-        cv::cuda::resize (input_img, orig_img, cv::Size(netRT->input_dim.w, netRT->input_dim.h), 0.0, 0.0, 1, stream); 
-        orig_img.convertTo(frame_nomean, CV_32FC3, 1, -127, stream);
-        frame_nomean.convertTo(imagePreproc, CV_32FC3, 1 / 128.0, 0, stream);
+        cv::cuda::resize (input_img, orig_img_gpu, cv::Size(netRT->input_dim.w, netRT->input_dim.h), 0.0, 0.0, 1, stream); 
+        orig_img_gpu.convertTo(frame_nomean_gpu, CV_32FC3, 1, -127, stream);
+        frame_nomean_gpu.convertTo(imagePreprocGpu, CV_32FC3, 1 / 128.0, 0, stream);
 
         //copy image into tensors
-        cv::cuda::split(imagePreproc, bgr, stream);
+        cv::cuda::split(imagePreprocGpu, bgrGpu, stream);
 
         for(int i=0; i < netRT->input_dim.c; i++){
-            int idx = i * imagePreproc.rows * imagePreproc.cols;
+            int idx = i * imagePreprocGpu.rows * imagePreprocGpu.cols;
             checkCuda( cudaMemcpyAsync((void *)&input_d_buffer[idx + netRT->input_dim.tot()*bi],
-                        (void *)bgr[i].data,
-                        imagePreproc.rows * imagePreproc.cols* sizeof(float),
+                        (void *)bgrGpu[i].data,
+                        imagePreprocGpu.rows * imagePreprocGpu.cols* sizeof(float),
                         cudaMemcpyDeviceToDevice,
                         cv::cuda::StreamAccessor::getStream(stream)) );
         }
-#else
-        //resize image, remove mean, divide by std
-        cv::Mat frame_nomean;
-        resize(frame, frame, cv::Size(netRT->input_dim.w, netRT->input_dim.h));
-        frame.convertTo(frame_nomean, CV_32FC3, 1, -127);
-        frame_nomean.convertTo(imagePreproc, CV_32FC3, 1 / 128.0, 0);
+        return;
+    }
 
-        //copy image into tensor and copy it into GPU
-        cv::split(imagePreproc, bgr);
-        for (int i = 0; i < netRT->input_dim.c; i++){
-            int idx = i * imagePreproc.rows * imagePreproc.cols;
-            memcpy((void *)&input[idx + netRT->input_dim.tot()*bi], (void *)bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType));
-        }
-        checkCuda(cudaMemcpyAsync(input_d+ netRT->input_dim.tot()*bi, input + netRT->input_dim.tot()*bi, netRT->input_dim.tot() * sizeof(dnnType), cudaMemcpyHostToDevice, netRT->stream));
 #endif
+    //resize image, remove mean, divide by std
+    resize(frame, frame_nomean, cv::Size(netRT->input_dim.w, netRT->input_dim.h));
+    //frame_nomean.convertTo(frame_nomean, CV_32FC3, 1, -127);
+    frame_nomean.convertTo(imagePreproc, CV_32FC3, 1 / 128.0, -1.0);
+
+    //copy image into tensor and copy it into GPU
+    cv::split(imagePreproc, bgr);
+    for (int i = 0; i < netRT->input_dim.c; i++){
+        int idx = i * imagePreproc.rows * imagePreproc.cols;
+        checkCuda( cudaMemcpyAsync((void *)&input_d_buffer[idx + netRT->input_dim.tot()*bi],
+                        (void *)bgr[i].data,
+                        imagePreproc.rows * imagePreproc.cols* sizeof(float),
+                        cudaMemcpyHostToDevice,
+                        cv::cuda::StreamAccessor::getStream(stream)) );
+
+
+
+        //int idx = i * imagePreproc.rows * imagePreproc.cols;
+        //memcpy((void *)&input[idx + netRT->input_dim.tot()*bi], (void *)bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType));
+    }
+    // checkCuda(cudaMemcpyAsync(input_d_buffer + netRT->input_dim.tot()*bi,
+    //                             input + netRT->input_dim.tot()*bi,
+    //                             netRT->input_dim.tot() * sizeof(dnnType),
+    //                             cudaMemcpyHostToDevice,
+    //                             cv::cuda::StreamAccessor::getStream(stream)));
 }
 
 void MobilenetDetection::postprocess(const int bi, const bool mAP){

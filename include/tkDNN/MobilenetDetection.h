@@ -54,8 +54,9 @@ private:
     float *locations_h, *confidences_h;
 
 #ifdef OPENCV_CUDACONTRIB
-    cv::cuda::GpuMat orig_img, frame_nomean;
+    cv::cuda::GpuMat orig_img_gpu, frame_nomean_gpu;
 #endif
+    cv::Mat frame_nomean;
 
     void generate_ssd_priors(const SSDSpec *specs, const int n_specs, bool clamp = true);
     void convert_locatios_to_boxes_and_center();
@@ -67,13 +68,14 @@ public:
     MobilenetDetection()
 #ifdef OPENCV_CUDACONTRIB    
     :
-    orig_img(contiguousAllocator()),
-    frame_nomean(contiguousAllocator())
+    orig_img_gpu(contiguousAllocator()),
+    frame_nomean_gpu(contiguousAllocator())
 #endif
     {};
     ~MobilenetDetection() {}; 
 
-    bool init(const std::string& tensor_path,const int n_classes, const int n_batches=1, const float conf_thresh=0.3, const std::vector<std::string>& class_names = {}, bool cuda_graph = false) override;
+    bool init(const std::string& tensor_path,const int n_classes, const int n_batches=1, 
+        const float conf_thresh=0.3, const std::vector<std::string>& class_names = {}, bool cuda_graph = false, bool gpu_preprocess = true) override;
     void preprocess(cv::Mat &frame, const int bi=0, cv::cuda::Stream& stream=cv::cuda::Stream::Null()) override;
     void postprocess(const int bi=0,const bool mAP=false) override;
 };
