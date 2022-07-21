@@ -54,7 +54,7 @@ private:
     float *locations_h, *confidences_h;
 
 #ifdef OPENCV_CUDACONTRIB
-    cv::cuda::GpuMat orig_img_gpu, frame_nomean_gpu;
+    cv::cuda::GpuMat orig_img_gpu;
 #endif
     cv::Mat frame_nomean;
 
@@ -68,8 +68,7 @@ public:
     MobilenetDetection()
 #ifdef OPENCV_CUDACONTRIB    
     :
-    orig_img_gpu(contiguousAllocator()),
-    frame_nomean_gpu(contiguousAllocator())
+    orig_img_gpu(contiguousAllocator())
 #endif
     {};
     ~MobilenetDetection() {}; 

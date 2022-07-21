@@ -232,8 +232,9 @@ void MobilenetDetection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stre
 
         //resize image, remove mean, divide by std
         cv::cuda::resize (input_img, orig_img_gpu, cv::Size(netRT->input_dim.w, netRT->input_dim.h), 0.0, 0.0, 1, stream); 
-        orig_img_gpu.convertTo(frame_nomean_gpu, CV_32FC3, 1, -127, stream);
-        frame_nomean_gpu.convertTo(imagePreprocGpu, CV_32FC3, 1 / 128.0, 0, stream);
+        //orig_img_gpu.convertTo(frame_nomean_gpu, CV_32FC3, 1, -127, stream);
+        //frame_nomean_gpu.convertTo(imagePreprocGpu, CV_32FC3, 1 / 128.0, 0, stream);
+        orig_img_gpu.convertTo(imagePreprocGpu, CV_32FC3, 1 / 128.0, -127.0 / 128.0, stream);
 
         //copy image into tensors
         cv::cuda::split(imagePreprocGpu, bgrGpu, stream);
@@ -250,13 +251,16 @@ void MobilenetDetection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stre
     }
 
 #endif
+    
     //resize image, remove mean, divide by std
     resize(frame, frame_nomean, cv::Size(netRT->input_dim.w, netRT->input_dim.h));
+
     //frame_nomean.convertTo(frame_nomean, CV_32FC3, 1, -127);
-    frame_nomean.convertTo(imagePreproc, CV_32FC3, 1 / 128.0, -1.0);
+    frame_nomean.convertTo(imagePreproc, CV_32FC3, 1 / 128.0, -127.0 / 128.0);
 
     //copy image into tensor and copy it into GPU
     cv::split(imagePreproc, bgr);
+
     for (int i = 0; i < netRT->input_dim.c; i++){
         int idx = i * imagePreproc.rows * imagePreproc.cols;
         checkCuda( cudaMemcpyAsync((void *)&input_d_buffer[idx + netRT->input_dim.tot()*bi],
@@ -265,11 +269,12 @@ void MobilenetDetection::preprocess(cv::Mat &frame, const int bi, cv::cuda::Stre
                         cudaMemcpyHostToDevice,
                         cv::cuda::StreamAccessor::getStream(stream)) );
 
-
-
         //int idx = i * imagePreproc.rows * imagePreproc.cols;
         //memcpy((void *)&input[idx + netRT->input_dim.tot()*bi], (void *)bgr[i].data, imagePreproc.rows * imagePreproc.cols * sizeof(dnnType));
     }
+    //checkCuda(cudaMemcpyAsync((void*)input, (void*)input_d, imagePreproc.rows * imagePreproc.cols* sizeof(float), cudaMemcpyDeviceToHost, netRT->stream));
+    //checkCuda(cudaStreamSynchronize(netRT->stream));
+
     // checkCuda(cudaMemcpyAsync(input_d_buffer + netRT->input_dim.tot()*bi,
     //                             input + netRT->input_dim.tot()*bi,
     //                             netRT->input_dim.tot() * sizeof(dnnType),
